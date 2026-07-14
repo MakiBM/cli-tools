@@ -35,7 +35,7 @@ async function newBranchWizard(): Promise<void> {
     console.log("");
     console.log(
       pc.yellow(
-        `  Tip: PR chain — point this PR at '${base}'. Merge '${base}' with a merge/rebase-merge (not squash) so this rebase stays clean; then 'Change base' re-parents onto the grandparent.`,
+        `  Tip: PR chain - point this PR at '${base}'. Merge '${base}' with a merge/rebase-merge (not squash) so this rebase stays clean; then 'Change base' re-parents onto the grandparent.`,
       ),
     );
   }
@@ -93,7 +93,7 @@ export async function tui(): Promise<void> {
     if (active && base !== "main") {
       console.log(
         pc.yellow(
-          `  Tip: PR chain — '${active}' targets '${base}'. Prefer merge/rebase-merge over squash for '${base}'. After it merges, 'Change base' re-parents onto its base.`,
+          `  Tip: PR chain - '${active}' targets '${base}'. Prefer merge/rebase-merge over squash for '${base}'. After it merges, 'Change base' re-parents onto its base.`,
         ),
       );
     }

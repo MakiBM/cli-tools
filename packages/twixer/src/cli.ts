@@ -1,10 +1,9 @@
-import { formatHelp, printBanner, renderLogo } from "@makibm/cli-kit";
+import { formatHelp, renderLogo } from "@makibm/cli-kit";
 import { scan, type ScanOptions } from "./scan.js";
 import { renderHits, renderJson, renderTheme } from "./render.js";
 import { TailwindNotFoundError } from "./theme-loader.js";
 import { runTui } from "./tui.js";
-
-const SUBTITLE = "Find Tailwind v4 arbitrary-value classes and suggest the matching default token.";
+import { SUBTITLE } from "./meta.js";
 
 const HELP = {
   usage: "twixer [glob|dir...] [options]",
@@ -98,5 +97,3 @@ export async function run(argv: string[]): Promise<void> {
     }),
   );
 }
-
-export { printBanner };

@@ -22,7 +22,7 @@ function commitFile(name: string, content: string, msg: string): string {
 }
 
 // Guard for the incident: `work` rewritten (rebased) after a ship so `live` is no
-// longer an ancestor — its commits would cherry-pick against the wrong base.
+// longer an ancestor - its commits would cherry-pick against the wrong base.
 test("workDivergedFromLive: false when work descends from live, true after a rewrite", async () => {
   await withSandbox(() => {
     run("git", ["checkout", "-b", "feat", "main"]);

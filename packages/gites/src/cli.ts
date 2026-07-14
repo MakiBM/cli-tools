@@ -16,7 +16,7 @@ Commands:
 PR chains:
   Branch a feature off another feature (not main) and its PR targets that base.
   When the base is squash-merged into its own parent, run change-base to
-  re-parent the child (git rebase --onto) — this drops the parent's individual
+  re-parent the child (git rebase --onto) - this drops the parent's individual
   commits and avoids duplicate-commit conflicts.
 
 Worktrees:

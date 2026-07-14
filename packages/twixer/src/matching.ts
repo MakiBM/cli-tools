@@ -1,10 +1,4 @@
-import {
-  NAMESPACE_ALIASES,
-  PREFIX_RULES,
-  type Rule,
-  type Table,
-  type Theme,
-} from "./tw-defaults.js";
+import { PREFIX_RULES, type Rule, type Theme } from "./tw-defaults.js";
 
 // ---------- oklch -> hex ----------
 // Tailwind v4 theme uses oklch(). We convert to sRGB hex so values can be
@@ -296,5 +290,3 @@ export const lookupReplacement = (
   }
   return null;
 };
-
-export { NAMESPACE_ALIASES, type Table };

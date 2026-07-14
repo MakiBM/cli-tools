@@ -1,7 +1,7 @@
 # hideai
 
-Tiny git hook installer that blocks commit messages with AI assistant trailers
-— Claude, Copilot, Cursor, ChatGPT, Aider, Tabnine, Gemini, and more.
+Tiny git hook installer that blocks commit messages with AI assistant trailers:
+Claude, Copilot, Cursor, ChatGPT, Aider, Tabnine, Gemini, and more.
 
 ## Install
 
@@ -30,7 +30,7 @@ The installed hook is a small portable bash script. On every commit, it reads
 grep patterns against the commit message. If any match, the commit is rejected
 with a message explaining which agent's pattern triggered.
 
-Patterns are intentionally narrow — they target the literal `Co-Authored-By:`
+Patterns are intentionally narrow - they target the literal `Co-Authored-By:`
 trailers and "Generated with ..." footers these tools tend to emit. They will
 not flag legitimate commit messages that simply mention an agent name.
 

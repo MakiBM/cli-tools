@@ -35,7 +35,7 @@ export async function startFeature(
 
     console.log(`Feature started in its own worktree:`);
     console.log(`  ${path}`);
-    console.log(`'${name}' stays local until you ship — nothing pushed to ${origin} yet.`);
+    console.log(`'${name}' stays local until you ship - nothing pushed to ${origin} yet.`);
     return;
   }
 
@@ -47,5 +47,5 @@ export async function startFeature(
   await withSpinner(`Pushing ${work} → ${remote}`, () => gitRun("push", "-u", remote, work));
 
   console.log(`Feature started. You are on '${work}'.`);
-  console.log(`'${name}' stays local until you ship — nothing pushed to ${origin} yet.`);
+  console.log(`'${name}' stays local until you ship - nothing pushed to ${origin} yet.`);
 }

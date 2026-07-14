@@ -13,7 +13,7 @@ git push -u origin main
 
 ## 2. Publish to npm (scope @makibm)
 
-Publishing must happen in dependency order — `@makibm/cli-kit` first, since the
+Publishing must happen in dependency order - `@makibm/cli-kit` first, since the
 tools depend on it. `pnpm publish -r` handles ordering and rewrites the
 `workspace:^` dependency to the real version automatically.
 

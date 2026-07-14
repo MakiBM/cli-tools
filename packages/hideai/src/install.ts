@@ -105,7 +105,7 @@ export function uninstallHook(): { removed: boolean; path: string } {
   } else {
     writeFileSync(target.path, "");
     chmodSync(target.path, 0o755);
-    // Easier: remove the file. But some systems may have stale references — leaving an empty hook is safe.
+    // Easier: remove the file. But some systems may have stale references - leaving an empty hook is safe.
   }
   gitTry("config", "--unset", "hideai.block");
   return { removed: true, path: target.path };

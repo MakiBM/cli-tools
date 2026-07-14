@@ -1,4 +1,4 @@
-// Pure routing — no theme data lives here. Values are loaded at runtime from
+// Pure routing - no theme data lives here. Values are loaded at runtime from
 // the project's installed `tailwindcss/theme.css` plus any user @theme/:root
 // declarations under the search root.
 
@@ -193,7 +193,7 @@ add(
   [{ kind: "theme", ns: "radius" }],
 );
 
-// Borders / rings / outlines — v4 width utilities are dynamic integer px.
+// Borders / rings / outlines - v4 width utilities are dynamic integer px.
 add(
   [
     "border",

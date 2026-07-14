@@ -59,7 +59,7 @@ function appendFile(name: string, content: string): void {
 }
 
 function commit(msg: string, file = "file.txt"): void {
-  appendFile(file, `${msg} — ${Date.now()}\n`);
+  appendFile(file, `${msg} - ${Date.now()}\n`);
   shIn(WORK_DIR, "git", ["add", file]);
   shIn(WORK_DIR, "git", ["commit", "-m", msg]);
 }
@@ -196,7 +196,7 @@ async function main(): Promise<void> {
     scenario = await select<string>({
       message: "Pick a demo scenario",
       choices: Object.entries(SCENARIOS).map(([key, { label }]) => ({
-        name: `${key.padEnd(11)} — ${label}`,
+        name: `${key.padEnd(11)} - ${label}`,
         value: key,
       })),
       pageSize: 10,
@@ -211,7 +211,7 @@ async function main(): Promise<void> {
   }
 
   if (existsSync(WORK_DIR)) {
-    console.log(pc.yellow(`Existing sandbox at ${DEMO_ROOT} — wiping for clean run.`));
+    console.log(pc.yellow(`Existing sandbox at ${DEMO_ROOT} - wiping for clean run.`));
     wipe();
   }
 

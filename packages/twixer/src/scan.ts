@@ -155,7 +155,7 @@ const lineColOf = (lineStarts: number[], idx: number): { line: number; col: numb
 
 /**
  * Scan files for Tailwind arbitrary-value classes and resolve each to its
- * default-token replacement. Pure of console/exit — returns structured hits.
+ * default-token replacement. Pure of console/exit - returns structured hits.
  */
 export const scan = (options: ScanOptions = {}): ScanResult => {
   const cwd = options.cwd ?? process.cwd();

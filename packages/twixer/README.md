@@ -1,6 +1,6 @@
 # twixer
 
-Find Tailwind v4 arbitrary-value classes — the `text-[13px]`, `bg-[#ef4444]`, `top-[calc(100%-1rem)]` magic-number escape hatches — across your codebase, and **see which ones can be swapped for a token from your `@theme`**.
+Find Tailwind v4 arbitrary-value classes - the `text-[13px]`, `bg-[#ef4444]`, `top-[calc(100%-1rem)]` magic-number escape hatches - across your codebase, and **see which ones can be swapped for a token from your `@theme`**.
 
 By default the tool only shows arbitrary classes whose value matches a real token (built-in or custom), so the suggestion is exact and safe:
 
@@ -17,11 +17,11 @@ With `--round` it also suggests the **nearest** token in orange when no exact ma
 
 ## How tokens are resolved
 
-All theme values are read at runtime — nothing is hardcoded:
+All theme values are read at runtime - nothing is hardcoded:
 
 1. **Framework defaults** are read from your project's installed `tailwindcss/theme.css` (v4). oklch colors are converted to sRGB hex for matching.
 2. **Your overrides** in any `*.css` under the search root (Tailwind v4 `@theme { … }` / `:root { … }`) are loaded on top.
-3. **Dynamic utilities** (`ring-N`, `border-N`, `z-N`, `order-N`, `duration-N`, `p-N`, `m-N`, etc.) are computed from Tailwind's scaling rules and your `--spacing` base — not from a lookup table.
+3. **Dynamic utilities** (`ring-N`, `border-N`, `z-N`, `order-N`, `duration-N`, `p-N`, `m-N`, etc.) are computed from Tailwind's scaling rules and your `--spacing` base - not from a lookup table.
 
 If `tailwindcss` isn't installed in `node_modules`, the tool exits with an error.
 
@@ -74,7 +74,7 @@ npx @makibm/twixer --theme ./packages/tailwind-config/theme.css
 - CSS function calls: `top-[calc(100%-1rem)]`, `bg-[url(...)]`
 - Tailwind named groups/peers: `group-data-[viewport=false]/navigation-menu:...`
 
-Arbitrary **variants** (`data-[state=open]:`, `aria-[…]:`, `group-data-[…]:`, etc.) are correctly skipped — they're selectors, not utility classes.
+Arbitrary **variants** (`data-[state=open]:`, `aria-[…]:`, `group-data-[…]:`, etc.) are correctly skipped - they're selectors, not utility classes.
 
 ## Value normalization
 
@@ -94,7 +94,7 @@ Equivalent forms collapse to the same key before lookup, so:
 
 ## Caveats
 
-It's a regex-based scanner, not a parser. It looks at text only — so it will find arbitrary classes in comments and strings too. That's almost always what you want for an audit. False positives are rare in practice but possible.
+It's a regex-based scanner, not a parser. It looks at text only - so it will find arbitrary classes in comments and strings too. That's almost always what you want for an audit. False positives are rare in practice but possible.
 
 ## Requirements
 

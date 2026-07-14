@@ -1,14 +1,14 @@
 # makibm-tools
 
 Monorepo of MakiBM command-line tools, all built on a shared CLI shell
-([`@makibm/cli-kit`](packages/cli-kit)) — consistent logo (with a "By MakiBM"
+([`@makibm/cli-kit`](packages/cli-kit)) - consistent logo (with a "By MakiBM"
 line and subtitle), color palette, help formatting, and interactive menus.
 
 ## Packages
 
 | Package                               | Command  | What it does                                                                              |
 | ------------------------------------- | -------- | ----------------------------------------------------------------------------------------- |
-| [`@makibm/cli-kit`](packages/cli-kit) | —        | Published toolkit: `renderLogo`, `palette`, `formatHelp`, menu/prompt helpers, `spinner`. |
+| [`@makibm/cli-kit`](packages/cli-kit) | -        | Published toolkit: `renderLogo`, `palette`, `formatHelp`, menu/prompt helpers, `spinner`. |
 | [`@makibm/gites`](packages/gites)     | `gites`  | Two-track git workflow for batching and timing client commits.                            |
 | [`@makibm/twixer`](packages/twixer)   | `twixer` | Find Tailwind v4 arbitrary-value classes and suggest the matching default token.          |
 | [`@makibm/hideai`](packages/hideai)   | `hideai` | Block commits with AI-assistant trailers (Claude, Copilot, Cursor, …).                    |

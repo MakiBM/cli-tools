@@ -1,7 +1,7 @@
 {
   "name": "@makibm/hideai",
   "version": "1.0.0",
-  "description": "Block commits with AI assistant trailers — Claude, Copilot, Cursor, ChatGPT and friends.",
+  "description": "Block commits with AI assistant trailers - Claude, Copilot, Cursor, ChatGPT and friends.",
   "license": "MIT",
   "author": "Bartek Makos",
   "repository": {

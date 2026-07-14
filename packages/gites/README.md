@@ -54,9 +54,9 @@ setup wizard toggle) to make worktrees the default for new features.
 
 ## The workflow
 
-- **`gites-<name>`** — your working branch. Pushed only to your private
+- **`gites-<name>`** - your working branch. Pushed only to your private
   `gites` remote. Never reaches the client.
-- **`<name>`** — the client-facing branch. Created locally at
+- **`<name>`** - the client-facing branch. Created locally at
   `start-feature` and **not pushed to origin until your first `ship`**, so
   branching a chain off a not-yet-published base leaks nothing. Commits arrive
   one ship at a time via the TUI, each with a custom timestamp.
@@ -70,16 +70,16 @@ the chunk lands on `<name>` with timestamps.
 
 ## PR chains (stacked branches)
 
-You can branch a feature off another feature instead of `main` — pick the base
+You can branch a feature off another feature instead of `main` - pick the base
 in the "New feature" wizard (fuzzy type-to-filter over local + `origin/*`
 branches), or `gites start-feature <name> <base>`. The base is stored per
 feature and becomes the branch your PR should target.
 
 Example:
 
-- `214` — epic, base `main`
-- `237` — base `214`; PR targets `214`
-- `238` — base `237` (keep working while `237` is in review); PR targets `237`
+- `214` - epic, base `main`
+- `237` - base `214`; PR targets `214`
+- `238` - base `237` (keep working while `237` is in review); PR targets `237`
 
 When `237` is merged into `214`, re-parent `238` with **Change base** (or
 `gites change-base`) and pick `214`. Its PR now targets `214`.
@@ -90,18 +90,18 @@ When `237` is merged into `214`, re-parent `238` with **Change base** (or
   contain the parent's work after merge.
 - **Prefer merge/rebase-merge over squash for a parent that has children.**
   A merge or rebase-merge preserves the parent's commits as the same SHAs, so
-  the child's rebase treats them as already applied — a true no-op, trivially
+  the child's rebase treats them as already applied - a true no-op, trivially
   clean. Squash rewrites history, which is what forces the `--onto` dance below.
   Reserve squash for leaf/standalone PRs.
-- **After a squash-merge, use `change-base` — not a plain rebase.** A plain
+- **After a squash-merge, use `change-base` - not a plain rebase.** A plain
   `git rebase origin/<grandparent>` (or `git merge`) re-applies every one of the
   parent's individual commits (still present in the child) on top of a base that
-  already contains them squashed — every commit conflicts. `change-base` runs
+  already contains them squashed - every commit conflicts. `change-base` runs
   `git rebase --onto origin/<newBase> origin/<oldBase> <child>`, replaying **only
   the child's own commits**, so the parent's commits are never re-applied. This
   eliminates the duplicate-commit avalanche. It does **not** eliminate genuine
   conflicts: if your own commits touch the same lines the squash changed (or the
-  squash author applied review edits), you still resolve those — but they're the
+  squash author applied review edits), you still resolve those - but they're the
   normal, minimal kind.
 - **Rebase only your own un-reviewed work.** Re-parenting a live branch that is
   already under review force-pushes it (`--force-with-lease`); tell reviewers to
@@ -122,18 +122,18 @@ Scenarios: `fresh` (run setup wizard), `ready`, `active` (commits ready to
 ship), `multi` (multiple features for `switch`), `teammate` (origin moved
 ahead for `resync`), `attachable` (existing origin branch for `attach`).
 
-The sandbox lives at `$TMPDIR/gites-demo/` — entirely outside your repo.
+The sandbox lives at `$TMPDIR/gites-demo/` - entirely outside your repo.
 
 ## What gites writes to your clone (local only)
 
 - Adds a `gites` remote (your private repo for the `gites-*` work branches)
 - Installs a `pre-push` hook in `.git/hooks/pre-push` (or your `core.hooksPath`
-  if set) — blocks `gites-*` branches from ever reaching origin. An existing
+  if set) - blocks `gites-*` branches from ever reaching origin. An existing
   `pre-push` hook is backed up to `pre-push.pre-gites`.
 - Sets a few configs in `gites.*` namespace (`origin`, `remote`, `branch`)
 
 That's it. `core.hooksPath`, `remote.pushDefault`, and aliases are **never**
-touched — you can use the repo normally outside gites. Branches created by
+touched - you can use the repo normally outside gites. Branches created by
 gites have proper per-branch upstreams (`<feature>` → origin,
 `gites-<feature>` → gites), so `git push` from any branch goes where you'd
 expect.
@@ -146,7 +146,7 @@ None of this touches origin or anyone else who pulls from it.
   TUI detects this automatically).
 - **Don't rebase the origin branch after the client has reviewed it.** Use
   `git merge main` instead.
-- **The `pre-push` hook is your safety net** — blocks `gites-*` branches
+- **The `pre-push` hook is your safety net** - blocks `gites-*` branches
   from reaching `origin`.
 - **Cherry-pick conflicts** are caught and the script stops with recovery
   instructions instead of silently failing.

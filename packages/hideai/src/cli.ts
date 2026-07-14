@@ -9,7 +9,7 @@ const HELP = `${renderLogo("HIDEAI", {
 })}\n\n${formatHelp({
   usage: "hideai [command]",
   commands: [
-    { name: "(default)", summary: "Interactive setup — pick which AI agents to block" },
+    { name: "(default)", summary: "Interactive setup - pick which AI agents to block" },
     { name: "install", summary: "Same as default" },
     { name: "uninstall", summary: "Remove the hideai commit-msg hook and config" },
     { name: "list", summary: "Show all known agents" },
@@ -43,12 +43,12 @@ async function interactiveInstall(): Promise<void> {
   }
   if (r.replaced) {
     console.log(
-      pc.yellow("  ! Replaced an existing commit-msg hook — backup at <path>.pre-hideai"),
+      pc.yellow("  ! Replaced an existing commit-msg hook - backup at <path>.pre-hideai"),
     );
   }
   if (picked.length === 0) {
     console.log(
-      pc.yellow("  ! Block list is empty — nothing will be blocked. Re-run to pick agents."),
+      pc.yellow("  ! Block list is empty - nothing will be blocked. Re-run to pick agents."),
     );
   } else {
     console.log(`${pc.green("✔")} Blocking: ${pc.cyan(picked.join(", "))}`);

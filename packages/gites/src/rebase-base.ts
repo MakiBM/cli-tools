@@ -44,7 +44,7 @@ export async function changeBase(): Promise<void> {
     if (!mb) throw new Error(`cannot find merge-base of '${live}' and '${newBase}'.`);
     upstream = mb;
     console.log(
-      pc.dim(`  (${origin}/${oldBase} gone — replaying ${live}'s own commits onto ${newBase})`),
+      pc.dim(`  (${origin}/${oldBase} gone - replaying ${live}'s own commits onto ${newBase})`),
     );
   }
 
@@ -81,5 +81,5 @@ export async function changeBase(): Promise<void> {
 
   console.log("");
   console.log(pc.bold(pc.green(`Done. '${live}' now targets '${newBase}'.`)));
-  console.log(pc.yellow(`Note: origin/${live} was rewritten — tell reviewers to re-pull (force).`));
+  console.log(pc.yellow(`Note: origin/${live} was rewritten - tell reviewers to re-pull (force).`));
 }

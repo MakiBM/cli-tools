@@ -9,7 +9,7 @@ import { gitTry, gitRun, gitRunAllowFail } from "./git.js";
 //
 // Detect the boundary by CONTENT instead: the squash commit on live has the same
 // tree as the parent segment's tip on work. The newest work commit whose full tree
-// snapshot already exists on live is that boundary — everything up to it is already
+// snapshot already exists on live is that boundary - everything up to it is already
 // merged, so we strip it wholesale with `git rebase --onto live <boundary> work`.
 export function workCutPoint(live: string, work: string): string | null {
   const mergeBase = gitTry("merge-base", live, work);

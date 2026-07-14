@@ -63,7 +63,7 @@ function parseStamp(s: string): Stamp | null {
 
 // Once shipped, gites rebases `work` onto `live`, so `live` is normally an
 // ancestor of `work`. If it isn't, `work` was rewritten (rebase/amend/fixup) after
-// a ship — its commits would cherry-pick against the wrong base and collide with
+// a ship - its commits would cherry-pick against the wrong base and collide with
 // their already-shipped form.
 export function workDivergedFromLive(live: string, work: string): boolean {
   return !gitOk("merge-base", "--is-ancestor", live, work);
@@ -135,7 +135,7 @@ export async function ship(): Promise<void> {
   console.clear();
   printArt();
   console.log(pc.bold(accent(`Ship commits to '${live}'`)));
-  console.log(pc.dim("Pick the latest commit to ship — everything older is included too."));
+  console.log(pc.dim("Pick the latest commit to ship - everything older is included too."));
   console.log("");
 
   const upTo = await select<number>({
@@ -221,7 +221,7 @@ export async function ship(): Promise<void> {
   let days: DayWindow[] = buildDayWindows(startDT, endDT, offDates, WORK_START_MIN, WORK_END_MIN);
   if (days.length === 0) {
     if (candidateDates.length > 1 && offDates.size === candidateDates.length) {
-      console.log(pc.red("All days are off — nothing to ship."));
+      console.log(pc.red("All days are off - nothing to ship."));
       return;
     }
     days = [{ date: localDate(new Date()), startMin: WORK_START_MIN, endMin: WORK_START_MIN }];
@@ -329,7 +329,7 @@ export async function ship(): Promise<void> {
       await gitRunAllowFail("cherry-pick", "--abort");
       console.log("");
       console.log(
-        `Cherry-pick conflict on ${sha.slice(0, 8)} — reverted this ship, '${live}' is unchanged.`,
+        `Cherry-pick conflict on ${sha.slice(0, 8)} - reverted this ship, '${live}' is unchanged.`,
       );
       console.log(
         `  '${work}' likely conflicts with what was already shipped; rebase it onto '${live}' and retry.`,
@@ -355,7 +355,7 @@ export async function ship(): Promise<void> {
     // --force-with-lease would then abort with "stale info".
     await withSpinner(`Fetching ${origin}`, () => gitRunAllowFail("fetch", "--prune", origin));
     // If origin/<live> exists its history may diverge (re-parenting rewrites live),
-    // so force-with-lease. If it's absent this is a fresh create — a plain push, since
+    // so force-with-lease. If it's absent this is a fresh create - a plain push, since
     // force-with-lease has no ref to lease against and would fail.
     const remoteHasLive = gitOk("rev-parse", "--verify", `refs/remotes/${origin}/${live}`);
     const pushArgs = remoteHasLive

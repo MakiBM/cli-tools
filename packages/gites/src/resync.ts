@@ -30,7 +30,7 @@ export async function resync(): Promise<void> {
 
   if (mainElsewhere) {
     console.log(
-      pc.dim("  (main is checked out in another worktree — leaving it to that checkout)"),
+      pc.dim("  (main is checked out in another worktree - leaving it to that checkout)"),
     );
   } else {
     await withSpinner(
@@ -82,7 +82,7 @@ export async function resync(): Promise<void> {
         `${tick} Rebased ${live} onto ${origin}/${live}`,
       );
     } else if (branchExists(live) && !originLiveExists) {
-      console.log(pc.dim(`  (${origin}/${live} not on remote yet — skipping live rebase)`));
+      console.log(pc.dim(`  (${origin}/${live} not on remote yet - skipping live rebase)`));
     }
 
     if (branchExists(work)) {
