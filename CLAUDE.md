@@ -63,6 +63,9 @@ Filter one package: `pnpm --filter @makibm/twixer <script>`.
 
 ## Releasing
 
-Bump version, `pnpm build`, then publish (cli-kit first): `pnpm -r publish --access public`.
-`@makibm` is a free npm **org** (not a personal scope) - you must be a member to
-publish. GitHub repo is `MakiBM/cli-tools`. Full remote steps in `RELEASE.md`.
+Releases run on **Changesets**: add a changeset with any shippable change
+(`pnpm changeset` - pick packages + bump type + summary) and commit it. On push
+to `main`, `.github/workflows/release.yml` opens a "Version Packages" PR; merging
+it publishes to npm. Do NOT hand-bump `version` fields - let `changeset version`
+do it. `@makibm` is a free npm **org** (not a personal scope); CI auth uses the
+`NPM_TOKEN` repo secret. GitHub repo is `MakiBM/cli-tools`. Details in `RELEASE.md`.
