@@ -64,4 +64,5 @@ Filter one package: `pnpm --filter @makibm/twixer <script>`.
 ## Releasing
 
 Bump version, `pnpm build`, then publish (cli-kit first): `pnpm -r publish --access public`.
-GitHub repo is `MakiBM/cli-tools`. Full remote steps in `RELEASE.md`.
+`@makibm` is a free npm **org** (not a personal scope) - you must be a member to
+publish. GitHub repo is `MakiBM/cli-tools`. Full remote steps in `RELEASE.md`.

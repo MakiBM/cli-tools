@@ -13,13 +13,26 @@ git push -u origin main
 
 ## 2. Publish to npm (scope @makibm)
 
-Publishing must happen in dependency order - `@makibm/cli-kit` first, since the
-tools depend on it. `pnpm publish -r` handles ordering and rewrites the
-`workspace:^` dependency to the real version automatically.
+`@makibm` is an npm **organization** (free tier - unlimited public packages),
+not a personal-account scope. A personal account's scope is locked to its
+username, so a branded scope like `@makibm/*` must come from an org of that
+name. You must be logged in as a member/owner of the `makibm` org to publish.
 
 ```bash
-npm login                       # ensure the @makibm scope exists / you can publish to it
+npm login                       # log in
+npm whoami                      # confirm you are logged in
+npm org ls makibm               # confirm you are a member/owner of the org
+```
+
+Publishing must happen in dependency order - `@makibm/cli-kit` first, since the
+tools depend on it. `pnpm -r publish` handles ordering and rewrites each
+`workspace:^` dependency to the real version automatically. `--access public`
+is required (scoped packages default to private).
+
+```bash
 pnpm -r publish --access public
+# add --otp=<code> if 2FA-for-publish is enabled
+# preview first with: pnpm -r publish --access public --dry-run
 ```
 
 ## 3. Archive the old repositories
