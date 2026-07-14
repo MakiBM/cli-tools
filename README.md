@@ -1,4 +1,4 @@
-# makibm-tools
+# cli-tools
 
 Monorepo of MakiBM command-line tools, all built on a shared CLI shell
 ([`@makibm/cli-kit`](packages/cli-kit)) - consistent logo (with a "By MakiBM"

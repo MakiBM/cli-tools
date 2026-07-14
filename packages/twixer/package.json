@@ -16,7 +16,7 @@
   "author": "Bartek Makos",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MakiBM/makibm-tools.git",
+    "url": "git+https://github.com/MakiBM/cli-tools.git",
     "directory": "packages/twixer"
   },
   "bin": {

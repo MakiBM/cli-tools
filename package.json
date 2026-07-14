@@ -1,5 +1,5 @@
 {
-  "name": "makibm-tools",
+  "name": "cli-tools",
   "version": "1.0.0",
   "private": true,
   "description": "Monorepo of MakiBM CLI tools: gites, twixer, hideai, built on @makibm/cli-kit.",

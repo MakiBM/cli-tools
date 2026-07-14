@@ -6,8 +6,8 @@ commits, tests) is already done on the `main` branch.
 ## 1. Create the GitHub repo and push
 
 ```bash
-cd makibm-tools
-gh repo create MakiBM/makibm-tools --private --source=. --remote=origin
+cd cli-tools
+gh repo create MakiBM/cli-tools --private --source=. --remote=origin
 git push -u origin main
 ```
 
