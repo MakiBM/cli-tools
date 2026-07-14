@@ -1,0 +1,34 @@
+{
+  "name": "gitpace",
+  "version": "0.6.1",
+  "description": "Two-track git workflow for batching and timing client commits",
+  "type": "module",
+  "bin": {
+    "gitpace": "./dist/bin/gitpace.js"
+  },
+  "files": [
+    "dist",
+    "hooks"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/bin/gitpace.js",
+    "dev": "tsx bin/gitpace.ts",
+    "test": "tsx --test --test-concurrency=1 'tests/**/*.test.ts'",
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx scripts/demo.ts",
+    "demo:reset": "tsx scripts/demo.ts --reset",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.2.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

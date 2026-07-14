@@ -1,0 +1,31 @@
+{
+  "name": "hideai",
+  "version": "0.2.0",
+  "description": "Block commits with AI assistant trailers — Claude, Copilot, Cursor, ChatGPT and friends.",
+  "type": "module",
+  "bin": {
+    "hideai": "./dist/bin/hideai.js"
+  },
+  "files": [
+    "dist",
+    "hook"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/bin/hideai.js",
+    "dev": "tsx bin/hideai.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.2.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

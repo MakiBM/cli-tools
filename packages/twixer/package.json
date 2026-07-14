@@ -1,0 +1,46 @@
+{
+  "name": "tw-arbitrary-finder",
+  "version": "2.0.0",
+  "description": "Find Tailwind v4 arbitrary-value classes (e.g. text-[13px], bg-[#abc]) and suggest the matching default token from your @theme.",
+  "bin": {
+    "tw-arbitrary-finder": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "glob": "^10.3.10",
+    "ignore": "^7.0.5"
+  },
+  "keywords": [
+    "tailwind",
+    "tailwindcss",
+    "tailwind-v4",
+    "arbitrary",
+    "magic-numbers",
+    "lint",
+    "audit",
+    "cli"
+  ],
+  "author": "Bartek Makos",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MakiBM/tw-arbitrary-finder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MakiBM/tw-arbitrary-finder/issues"
+  },
+  "homepage": "https://github.com/MakiBM/tw-arbitrary-finder#readme",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "typescript": "^6.0.3"
+  }
+}

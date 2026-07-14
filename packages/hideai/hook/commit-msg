@@ -1,0 +1,46 @@
+#!/bin/bash
+# hideai commit-msg hook — blocks commit messages matching configured AI assistant trailers.
+# Configure via: git config hideai.block "claude,copilot,cursor"
+set -euo pipefail
+
+block=$(git config --get hideai.block 2>/dev/null || echo "")
+[ -z "$block" ] && exit 0
+
+msg=$(cat "$1")
+
+pattern_for() {
+  case "$1" in
+    claude)   echo 'co-authored-by:.*(claude|anthropic|noreply@anthropic)|generated with .*claude' ;;
+    openai)   echo 'co-authored-by:.*(openai|chatgpt|gpt-?[0-9])' ;;
+    copilot)  echo 'co-authored-by:.*(github[- ]?copilot|copilot)' ;;
+    cursor)   echo 'co-authored-by:.*cursor|generated with .*cursor' ;;
+    windsurf) echo 'co-authored-by:.*windsurf|generated with .*windsurf' ;;
+    codeium)  echo 'co-authored-by:.*codeium' ;;
+    aider)    echo 'co-authored-by:.*aider|^aider:' ;;
+    tabnine)  echo 'co-authored-by:.*tabnine' ;;
+    gemini)   echo 'co-authored-by:.*(gemini|google[- ]ai)' ;;
+    continue) echo 'co-authored-by:.*continue\.dev' ;;
+    devin)    echo 'co-authored-by:.*devin' ;;
+    v0)       echo 'co-authored-by:.*\bv0\b' ;;
+    bolt)     echo 'co-authored-by:.*bolt' ;;
+    lovable)  echo 'co-authored-by:.*lovable' ;;
+    replit)   echo 'co-authored-by:.*replit' ;;
+    *)        echo '' ;;
+  esac
+}
+
+old_ifs="$IFS"
+IFS=','
+for agent in $block; do
+  IFS="$old_ifs"
+  pat=$(pattern_for "$agent")
+  [ -z "$pat" ] && continue
+  if echo "$msg" | grep -iqE "$pat"; then
+    echo "hideai: commit blocked — message matches '$agent' pattern." >&2
+    echo "(to allow: remove the trailer, or 'git config --unset hideai.block')" >&2
+    exit 1
+  fi
+  IFS=','
+done
+IFS="$old_ifs"
+exit 0
