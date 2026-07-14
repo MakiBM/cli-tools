@@ -4,31 +4,41 @@
 
 export type Table = Record<string, string>;
 
-// Theme namespaces populated at runtime. Mirror the Tailwind v4 @theme keys.
-export const NAMESPACES = {
-  color: {} as Table,
-  text: {} as Table,           // font-size
-  "font-weight": {} as Table,
-  leading: {} as Table,        // line-height (named entries only)
-  tracking: {} as Table,       // letter-spacing
-  radius: {} as Table,
-  shadow: {} as Table,
-  "inset-shadow": {} as Table,
-  "drop-shadow": {} as Table,
-  blur: {} as Table,
-  font: {} as Table,           // font-family
-  ease: {} as Table,
-  animate: {} as Table,
-  breakpoint: {} as Table,
-  container: {} as Table,
-  perspective: {} as Table,
-  aspect: {} as Table,
-} as const;
+// Theme namespaces mirror the Tailwind v4 @theme keys.
+export const NAMESPACE_KEYS = [
+  "color",
+  "text", // font-size
+  "font-weight",
+  "leading", // line-height (named entries only)
+  "tracking", // letter-spacing
+  "radius",
+  "shadow",
+  "inset-shadow",
+  "drop-shadow",
+  "blur",
+  "font", // font-family
+  "ease",
+  "animate",
+  "breakpoint",
+  "container",
+  "perspective",
+  "aspect",
+] as const;
 
-export type NamespaceKey = keyof typeof NAMESPACES;
+export type NamespaceKey = (typeof NAMESPACE_KEYS)[number];
 
-// Spacing base read from `--spacing` (v4 single multiplier). Set at runtime.
-export const spacingBase = { px: null as number | null };
+// A theme is built fresh per scan: namespace tables populated from CSS plus the
+// spacing base read from `--spacing` (v4 single multiplier).
+export interface Theme {
+  namespaces: Record<NamespaceKey, Table>;
+  spacingBase: { px: number | null };
+}
+
+export function createTheme(): Theme {
+  const namespaces = {} as Record<NamespaceKey, Table>;
+  for (const key of NAMESPACE_KEYS) namespaces[key] = {};
+  return { namespaces, spacingBase: { px: null } };
+}
 
 // CSS namespace alias -> internal namespace key. Older or alternate names
 // supported for user CSS authors.

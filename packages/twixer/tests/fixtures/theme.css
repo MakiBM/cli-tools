@@ -1,0 +1,8 @@
+@theme {
+  --spacing: 0.25rem;
+  --color-red-500: #ff0000;
+  --color-blue-500: #3b82f6;
+  --radius-lg: 0.5rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+}

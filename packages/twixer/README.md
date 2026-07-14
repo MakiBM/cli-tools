@@ -1,4 +1,4 @@
-# tw-arbitrary-finder
+# twixer
 
 Find Tailwind v4 arbitrary-value classes — the `text-[13px]`, `bg-[#ef4444]`, `top-[calc(100%-1rem)]` magic-number escape hatches — across your codebase, and **see which ones can be swapped for a token from your `@theme`**.
 
@@ -29,40 +29,40 @@ If `tailwindcss` isn't installed in `node_modules`, the tool exits with an error
 
 ```bash
 # Scan a directory (recursively, default extensions)
-npx tw-arbitrary-finder ./src
+npx @makibm/twixer ./src
 
 # Or with explicit globs
-npx tw-arbitrary-finder "src/**/*.{ts,tsx,jsx,vue,svelte,html}"
+npx @makibm/twixer "src/**/*.{ts,tsx,jsx,vue,svelte,html}"
 
 # Default in cwd
-npx tw-arbitrary-finder
+npx @makibm/twixer
 
 # Show every arbitrary class, even ones with no replacement
-npx tw-arbitrary-finder --all
+npx @makibm/twixer --all
 
 # Also suggest the nearest token (orange ~>) when no exact match exists
-npx tw-arbitrary-finder --round
+npx @makibm/twixer --round
 
 # Group by class instead of by file
-npx tw-arbitrary-finder --group
+npx @makibm/twixer --group
 
 # Just print counts, sorted desc
-npx tw-arbitrary-finder --counts-only
+npx @makibm/twixer --counts-only
 
 # Machine-readable (includes the suggested replacement per hit)
-npx tw-arbitrary-finder --json > report.json
+npx @makibm/twixer --json > report.json
 
 # Custom ignores (repeatable, on top of the defaults)
-npx tw-arbitrary-finder --ignore "**/packages/{ui,dev-toolbar}/**"
+npx @makibm/twixer --ignore "**/packages/{ui,dev-toolbar}/**"
 
 # Disable .gitignore handling (it's honored by default)
-npx tw-arbitrary-finder --no-gitignore
+npx @makibm/twixer --no-gitignore
 
 # Inspect every theme token that was loaded (framework + your CSS)
-npx tw-arbitrary-finder --show-theme
+npx @makibm/twixer --show-theme
 
 # Point at an extra CSS file (repeatable). Disable user-CSS scanning entirely with --no-theme.
-npx tw-arbitrary-finder --theme ./packages/tailwind-config/theme.css
+npx @makibm/twixer --theme ./packages/tailwind-config/theme.css
 ```
 
 ## What it matches
