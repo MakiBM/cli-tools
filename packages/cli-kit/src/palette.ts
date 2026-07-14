@@ -24,15 +24,15 @@ function wrap(text: string, open: string, close: string): string {
 /** Color text with a truecolor foreground (defaults to the lime accent). */
 export function accent(text: string, color: Rgb = ACCENT_RGB): string {
   const [r, g, b] = color;
-  return wrap(text, `\x1b[38;2;${r};${g};${b}m`, '\x1b[39m');
+  return wrap(text, `\x1b[38;2;${r};${g};${b}m`, "\x1b[39m");
 }
 
 export function dim(text: string): string {
-  return wrap(text, '\x1b[2m', '\x1b[22m');
+  return wrap(text, "\x1b[2m", "\x1b[22m");
 }
 
 export function bold(text: string): string {
-  return wrap(text, '\x1b[1m', '\x1b[22m');
+  return wrap(text, "\x1b[1m", "\x1b[22m");
 }
 
 export function green(text: string): string {

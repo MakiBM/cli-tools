@@ -91,40 +91,121 @@ const add = (prefixes: string[], rules: Rule[]): void => {
 // Spacing-driven utilities (v4 derives from `--spacing`).
 add(
   [
-    "p", "px", "py", "pt", "pb", "pl", "pr", "ps", "pe",
-    "m", "mx", "my", "mt", "mb", "ml", "mr", "ms", "me",
-    "space-x", "space-y",
-    "gap", "gap-x", "gap-y",
-    "w", "h", "size", "min-w", "max-w", "min-h", "max-h", "basis",
-    "top", "right", "bottom", "left", "start", "end",
-    "inset", "inset-x", "inset-y",
-    "translate-x", "translate-y", "translate",
-    "scroll-m", "scroll-mx", "scroll-my", "scroll-mt", "scroll-mb", "scroll-ml", "scroll-mr",
-    "scroll-p", "scroll-px", "scroll-py", "scroll-pt", "scroll-pb", "scroll-pl", "scroll-pr",
+    "p",
+    "px",
+    "py",
+    "pt",
+    "pb",
+    "pl",
+    "pr",
+    "ps",
+    "pe",
+    "m",
+    "mx",
+    "my",
+    "mt",
+    "mb",
+    "ml",
+    "mr",
+    "ms",
+    "me",
+    "space-x",
+    "space-y",
+    "gap",
+    "gap-x",
+    "gap-y",
+    "w",
+    "h",
+    "size",
+    "min-w",
+    "max-w",
+    "min-h",
+    "max-h",
+    "basis",
+    "top",
+    "right",
+    "bottom",
+    "left",
+    "start",
+    "end",
+    "inset",
+    "inset-x",
+    "inset-y",
+    "translate-x",
+    "translate-y",
+    "translate",
+    "scroll-m",
+    "scroll-mx",
+    "scroll-my",
+    "scroll-mt",
+    "scroll-mb",
+    "scroll-ml",
+    "scroll-mr",
+    "scroll-p",
+    "scroll-px",
+    "scroll-py",
+    "scroll-pt",
+    "scroll-pb",
+    "scroll-pl",
+    "scroll-pr",
     "indent",
   ],
   [{ kind: "spacing" }],
 );
 
 // Typography
-add(["text"], [{ kind: "theme", ns: "text" }, { kind: "theme", ns: "color" }]);
-add(["font"], [{ kind: "theme", ns: "font-weight" }, { kind: "theme", ns: "font" }]);
+add(
+  ["text"],
+  [
+    { kind: "theme", ns: "text" },
+    { kind: "theme", ns: "color" },
+  ],
+);
+add(
+  ["font"],
+  [
+    { kind: "theme", ns: "font-weight" },
+    { kind: "theme", ns: "font" },
+  ],
+);
 add(["leading"], [{ kind: "theme", ns: "leading" }, { kind: "spacing" }]);
 add(["tracking"], [{ kind: "theme", ns: "tracking" }]);
 
 // Radius
 add(
   [
-    "rounded", "rounded-t", "rounded-r", "rounded-b", "rounded-l",
-    "rounded-tl", "rounded-tr", "rounded-bl", "rounded-br",
-    "rounded-s", "rounded-e", "rounded-ss", "rounded-se", "rounded-es", "rounded-ee",
+    "rounded",
+    "rounded-t",
+    "rounded-r",
+    "rounded-b",
+    "rounded-l",
+    "rounded-tl",
+    "rounded-tr",
+    "rounded-bl",
+    "rounded-br",
+    "rounded-s",
+    "rounded-e",
+    "rounded-ss",
+    "rounded-se",
+    "rounded-es",
+    "rounded-ee",
   ],
   [{ kind: "theme", ns: "radius" }],
 );
 
 // Borders / rings / outlines — v4 width utilities are dynamic integer px.
 add(
-  ["border", "border-x", "border-y", "border-t", "border-r", "border-b", "border-l", "border-s", "border-e"],
+  [
+    "border",
+    "border-x",
+    "border-y",
+    "border-t",
+    "border-r",
+    "border-b",
+    "border-l",
+    "border-s",
+    "border-e",
+  ],
   [{ kind: "integer-px" }, { kind: "theme", ns: "color" }],
 );
 add(["divide", "divide-x", "divide-y"], [{ kind: "integer-px" }, { kind: "theme", ns: "color" }]);
@@ -140,13 +221,36 @@ add(
 );
 
 // Effects
-add(["shadow"], [{ kind: "theme", ns: "shadow" }, { kind: "theme", ns: "color" }]);
-add(["inset-shadow"], [{ kind: "theme", ns: "inset-shadow" }, { kind: "theme", ns: "color" }]);
+add(
+  ["shadow"],
+  [
+    { kind: "theme", ns: "shadow" },
+    { kind: "theme", ns: "color" },
+  ],
+);
+add(
+  ["inset-shadow"],
+  [
+    { kind: "theme", ns: "inset-shadow" },
+    { kind: "theme", ns: "color" },
+  ],
+);
 add(["drop-shadow"], [{ kind: "theme", ns: "drop-shadow" }]);
 add(["blur", "backdrop-blur"], [{ kind: "theme", ns: "blur" }]);
 
 // Numeric scales (v4 dynamic)
-add(["opacity", "bg-opacity", "text-opacity", "border-opacity", "ring-opacity", "divide-opacity", "placeholder-opacity"], [{ kind: "percent" }]);
+add(
+  [
+    "opacity",
+    "bg-opacity",
+    "text-opacity",
+    "border-opacity",
+    "ring-opacity",
+    "divide-opacity",
+    "placeholder-opacity",
+  ],
+  [{ kind: "percent" }],
+);
 add(["z"], [{ kind: "integer" }]);
 add(["order"], [{ kind: "integer" }]);
 add(["duration", "transition-duration"], [{ kind: "ms" }]);

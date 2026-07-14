@@ -1,15 +1,6 @@
-import { accent, green, red } from './palette.js';
+import { accent, green, red } from "./palette.js";
 
-const FRAMES = [
-  '░░░░░░',
-  '▓░░░░░',
-  '▒▓░░░░',
-  '░▒▓░░░',
-  '░░▒▓░░',
-  '░░░▒▓░',
-  '░░░░▒▓',
-  '░░░░░▒',
-];
+const FRAMES = ["░░░░░░", "▓░░░░░", "▒▓░░░░", "░▒▓░░░", "░░▒▓░░", "░░░▒▓░", "░░░░▒▓", "░░░░░▒"];
 const INTERVAL = 100;
 
 export interface SpinnerOptions {
@@ -23,7 +14,7 @@ export class Spinner {
   private readonly enabled: boolean;
 
   constructor(
-    private label = 'Working...',
+    private label = "Working...",
     options: SpinnerOptions = {},
   ) {
     this.enabled = options.enabled ?? Boolean(process.stdout.isTTY);
@@ -31,7 +22,7 @@ export class Spinner {
 
   start(): void {
     if (!this.enabled) return;
-    process.stdout.write('\x1b[?25l');
+    process.stdout.write("\x1b[?25l");
     this.render();
     this.timer = setInterval(() => this.render(), INTERVAL);
   }
@@ -48,7 +39,7 @@ export class Spinner {
       this.timer = null;
     }
     if (this.enabled) {
-      process.stdout.write('\r\x1b[2K\x1b[?25h');
+      process.stdout.write("\r\x1b[2K\x1b[?25h");
     }
     if (finalLine !== undefined) console.log(finalLine);
   }
@@ -63,7 +54,7 @@ export async function withSpinner<T>(
   spinner.start();
   try {
     const result = await fn();
-    spinner.stop(successLine ?? `${green('✔')} ${label}`);
+    spinner.stop(successLine ?? `${green("✔")} ${label}`);
     return result;
   } catch (error) {
     spinner.stop(red(`✗ ${label}`));

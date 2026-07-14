@@ -1,4 +1,4 @@
-import { isGitRepo } from './git.js';
+import { isGitRepo } from "./git.js";
 
 const HELP = `Usage: gites [command]
 
@@ -35,16 +35,16 @@ interface CliError extends Error {
 }
 
 export async function run(args: string[]): Promise<void> {
-  if (!isGitRepo()) throw new Error('not inside a git repo.');
+  if (!isGitRepo()) throw new Error("not inside a git repo.");
 
   const filtered: string[] = [];
   let worktree: boolean | undefined;
   for (const a of args) {
-    if (a === '--verbose' || a === '-v') {
-      process.env.GITES_VERBOSE = '1';
-    } else if (a === '--worktree') {
+    if (a === "--verbose" || a === "-v") {
+      process.env.GITES_VERBOSE = "1";
+    } else if (a === "--worktree") {
       worktree = true;
-    } else if (a === '--no-worktree') {
+    } else if (a === "--no-worktree") {
       worktree = false;
     } else {
       filtered.push(a);
@@ -54,42 +54,42 @@ export async function run(args: string[]): Promise<void> {
 
   switch (cmd) {
     case undefined:
-    case 'tui': {
-      const { tui } = await import('./tui.js');
+    case "tui": {
+      const { tui } = await import("./tui.js");
       return tui();
     }
-    case 'start-feature': {
-      const { startFeature } = await import('./start-feature.js');
-      const { worktreeEnabled } = await import('./worktree.js');
+    case "start-feature": {
+      const { startFeature } = await import("./start-feature.js");
+      const { worktreeEnabled } = await import("./worktree.js");
       return startFeature(rest[0], rest[1], worktree ?? worktreeEnabled());
     }
-    case 'attach': {
-      const { attach } = await import('./attach.js');
+    case "attach": {
+      const { attach } = await import("./attach.js");
       return attach();
     }
-    case 'switch': {
-      const { switchFeature } = await import('./switch.js');
+    case "switch": {
+      const { switchFeature } = await import("./switch.js");
       return switchFeature();
     }
-    case 'change-base': {
-      const { changeBase } = await import('./rebase-base.js');
+    case "change-base": {
+      const { changeBase } = await import("./rebase-base.js");
       return changeBase();
     }
-    case 'ship': {
-      const { ship } = await import('./ship.js');
+    case "ship": {
+      const { ship } = await import("./ship.js");
       return ship();
     }
-    case 'resync': {
-      const { resync } = await import('./resync.js');
+    case "resync": {
+      const { resync } = await import("./resync.js");
       return resync();
     }
-    case 'setup': {
-      const { setupWizard } = await import('./setup.js');
+    case "setup": {
+      const { setupWizard } = await import("./setup.js");
       return setupWizard();
     }
-    case 'help':
-    case '-h':
-    case '--help':
+    case "help":
+    case "-h":
+    case "--help":
       console.log(HELP);
       return;
     default: {

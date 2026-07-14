@@ -1,12 +1,19 @@
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { existsSync, mkdirSync, copyFileSync, chmodSync, readFileSync, writeFileSync } from 'node:fs';
-import { execFileSync, spawnSync } from 'node:child_process';
-import pc from 'picocolors';
-import { formatBlockList, parseBlockList } from './blocklist.js';
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  copyFileSync,
+  chmodSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import pc from "picocolors";
+import { formatBlockList, parseBlockList } from "./blocklist.js";
 
-const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const HOOK_SRC = join(PKG_ROOT, 'hook', 'commit-msg');
+const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const HOOK_SRC = join(PKG_ROOT, "hook", "commit-msg");
 
 interface HookTarget {
   path: string;
@@ -15,40 +22,40 @@ interface HookTarget {
 
 function gitTry(...args: string[]): string {
   try {
-    return execFileSync('git', args, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).replace(/\n$/, '');
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).replace(/\n$/, "");
   } catch {
-    return '';
+    return "";
   }
 }
 
 function git(...args: string[]): string {
-  return execFileSync('git', args, { encoding: 'utf8' }).replace(/\n$/, '');
+  return execFileSync("git", args, { encoding: "utf8" }).replace(/\n$/, "");
 }
 
 function repoRoot(): string {
-  if (spawnSync('git', ['rev-parse', '--is-inside-work-tree'], { stdio: 'ignore' }).status !== 0) {
-    throw new Error('not inside a git repo');
+  if (spawnSync("git", ["rev-parse", "--is-inside-work-tree"], { stdio: "ignore" }).status !== 0) {
+    throw new Error("not inside a git repo");
   }
-  return git('rev-parse', '--show-toplevel');
+  return git("rev-parse", "--show-toplevel");
 }
 
 function hookTarget(): HookTarget {
-  const hooksPath = gitTry('config', 'core.hooksPath');
+  const hooksPath = gitTry("config", "core.hooksPath");
   if (hooksPath) {
-    return { path: join(hooksPath, 'commit-msg'), underHooksPath: true };
+    return { path: join(hooksPath, "commit-msg"), underHooksPath: true };
   }
-  const gitDir = git('rev-parse', '--git-dir');
-  return { path: join(gitDir, 'hooks', 'commit-msg'), underHooksPath: false };
+  const gitDir = git("rev-parse", "--git-dir");
+  return { path: join(gitDir, "hooks", "commit-msg"), underHooksPath: false };
 }
 
 function looksLikeHideaiHook(path: string): boolean {
   if (!existsSync(path)) return false;
   try {
-    const content = readFileSync(path, 'utf8');
-    return content.includes('hideai commit-msg hook');
+    const content = readFileSync(path, "utf8");
+    return content.includes("hideai commit-msg hook");
   } catch {
     return false;
   }
@@ -75,14 +82,14 @@ export function installHook(): { path: string; underHooksPath: boolean; replaced
 
 export function setBlockList(keys: string[]): void {
   if (keys.length === 0) {
-    git('config', '--unset', 'hideai.block');
+    git("config", "--unset", "hideai.block");
     return;
   }
-  git('config', 'hideai.block', formatBlockList(keys));
+  git("config", "hideai.block", formatBlockList(keys));
 }
 
 export function getBlockList(): string[] {
-  return parseBlockList(gitTry('config', 'hideai.block'));
+  return parseBlockList(gitTry("config", "hideai.block"));
 }
 
 export function uninstallHook(): { removed: boolean; path: string } {
@@ -96,10 +103,10 @@ export function uninstallHook(): { removed: boolean; path: string } {
     copyFileSync(backup, target.path);
     console.log(pc.dim(`  Restored prior hook from ${backup}`));
   } else {
-    writeFileSync(target.path, '');
+    writeFileSync(target.path, "");
     chmodSync(target.path, 0o755);
     // Easier: remove the file. But some systems may have stale references — leaving an empty hook is safe.
   }
-  gitTry('config', '--unset', 'hideai.block');
+  gitTry("config", "--unset", "hideai.block");
   return { removed: true, path: target.path };
 }

@@ -2,12 +2,12 @@
 export function parseBlockList(csv: string): string[] {
   if (!csv) return [];
   return csv
-    .split(',')
+    .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
 }
 
 /** Format agent keys into the CSV stored in `hideai.block`. */
 export function formatBlockList(keys: readonly string[]): string {
-  return keys.join(',');
+  return keys.join(",");
 }

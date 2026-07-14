@@ -1,7 +1,7 @@
-import { cpSync, existsSync, readdirSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
-import { git, gitTry, gitRun, getConfig } from './git.js';
-import { workBranch } from './feature.js';
+import { cpSync, existsSync, readdirSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+import { git, gitTry, gitRun, getConfig } from "./git.js";
+import { workBranch } from "./feature.js";
 
 export interface Worktree {
   path: string;
@@ -9,8 +9,8 @@ export interface Worktree {
 }
 
 function mainRoot(): string {
-  const commonDir = git('rev-parse', '--path-format=absolute', '--git-common-dir');
-  return dirname(commonDir.replace(/\/$/, ''));
+  const commonDir = git("rev-parse", "--path-format=absolute", "--git-common-dir");
+  return dirname(commonDir.replace(/\/$/, ""));
 }
 
 export function worktreesRoot(): string {
@@ -23,19 +23,19 @@ export function worktreePath(name: string): string {
 }
 
 export function listWorktrees(): Worktree[] {
-  const raw = gitTry('worktree', 'list', '--porcelain');
+  const raw = gitTry("worktree", "list", "--porcelain");
   const out: Worktree[] = [];
-  let path = '';
-  let branch = '';
-  for (const line of raw.split('\n')) {
-    if (line.startsWith('worktree ')) {
-      path = line.slice('worktree '.length);
-    } else if (line.startsWith('branch ')) {
-      branch = line.slice('branch '.length).replace(/^refs\/heads\//, '');
-    } else if (line === '') {
+  let path = "";
+  let branch = "";
+  for (const line of raw.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      path = line.slice("worktree ".length);
+    } else if (line.startsWith("branch ")) {
+      branch = line.slice("branch ".length).replace(/^refs\/heads\//, "");
+    } else if (line === "") {
       if (path) out.push({ path, branch });
-      path = '';
-      branch = '';
+      path = "";
+      branch = "";
     }
   }
   if (path) out.push({ path, branch });
@@ -45,7 +45,7 @@ export function listWorktrees(): Worktree[] {
 export function worktreeForFeature(name: string): string {
   const work = workBranch(name);
   const wt = listWorktrees().find((w) => w.branch === work);
-  return wt ? wt.path : '';
+  return wt ? wt.path : "";
 }
 
 export function branchCheckedOutElsewhere(branch: string): boolean {
@@ -54,7 +54,7 @@ export function branchCheckedOutElsewhere(branch: string): boolean {
 
 function copyLocalArtifacts(from: string, to: string): void {
   for (const entry of readdirSync(from)) {
-    if (entry === '.claude' || entry.startsWith('.env')) {
+    if (entry === ".claude" || entry.startsWith(".env")) {
       const src = join(from, entry);
       if (existsSync(src)) cpSync(src, join(to, entry), { recursive: true });
     }
@@ -63,15 +63,15 @@ function copyLocalArtifacts(from: string, to: string): void {
 
 export async function addWorktree(name: string, live: string): Promise<string> {
   const path = worktreePath(name);
-  await gitRun('worktree', 'add', path, '-b', workBranch(name), live);
+  await gitRun("worktree", "add", path, "-b", workBranch(name), live);
   copyLocalArtifacts(mainRoot(), path);
   return path;
 }
 
 export async function removeWorktree(path: string): Promise<void> {
-  await gitRun('worktree', 'remove', path);
+  await gitRun("worktree", "remove", path);
 }
 
 export function worktreeEnabled(): boolean {
-  return getConfig('gites.worktree') === 'true';
+  return getConfig("gites.worktree") === "true";
 }

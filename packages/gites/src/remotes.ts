@@ -1,9 +1,9 @@
-import { getConfig } from './git.js';
+import { getConfig } from "./git.js";
 
 export function originRemote(): string {
-  return getConfig('gites.origin') || 'origin';
+  return getConfig("gites.origin") || "origin";
 }
 
 export function gitesRemote(): string {
-  return getConfig('gites.remote') || 'gites';
+  return getConfig("gites.remote") || "gites";
 }

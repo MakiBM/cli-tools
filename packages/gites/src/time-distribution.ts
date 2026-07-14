@@ -1,5 +1,5 @@
 function fmt(t: number): string {
-  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 }
 
 export function parseHHMM(s: string): number | null {
@@ -44,7 +44,7 @@ export interface Stamp {
 }
 
 export function localDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function minutesOf(d: Date): number {
@@ -72,7 +72,8 @@ export function buildDayWindows(
   while (cursor.getTime() <= last.getTime()) {
     const date = localDate(cursor);
     if (!offDates.has(date)) {
-      const dayStart = date === startDate ? Math.max(workStartMin, minutesOf(startDT)) : workStartMin;
+      const dayStart =
+        date === startDate ? Math.max(workStartMin, minutesOf(startDT)) : workStartMin;
       const dayEnd = date === endDate ? Math.min(minutesOf(endDT), workEndMin) : workEndMin;
       if (dayStart <= dayEnd) windows.push({ date, startMin: dayStart, endMin: dayEnd });
     }
@@ -130,12 +131,12 @@ export function genSchedule(count: number, days: readonly DayWindow[], gap: numb
 }
 
 export function validateSchedule(schedule: readonly Stamp[]): boolean {
-  let prev = '';
+  let prev = "";
   for (const s of schedule) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(s.date)) return false;
     if (!isValidHHMM(s.time)) return false;
-    const [hh, mm] = s.time.split(':');
-    const key = `${s.date}T${hh!.padStart(2, '0')}:${mm}`;
+    const [hh, mm] = s.time.split(":");
+    const key = `${s.date}T${hh!.padStart(2, "0")}:${mm}`;
     if (key <= prev) return false;
     prev = key;
   }

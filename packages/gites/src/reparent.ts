@@ -1,4 +1,4 @@
-import { gitTry, gitRun, gitRunAllowFail } from './git.js';
+import { gitTry, gitRun, gitRunAllowFail } from "./git.js";
 
 // A squash-merged parent (common in PR chains: main → A → B, where A lands on
 // main/live as one squashed commit) leaves the parent's ORIGINAL commits in the
@@ -12,21 +12,21 @@ import { gitTry, gitRun, gitRunAllowFail } from './git.js';
 // snapshot already exists on live is that boundary — everything up to it is already
 // merged, so we strip it wholesale with `git rebase --onto live <boundary> work`.
 export function workCutPoint(live: string, work: string): string | null {
-  const mergeBase = gitTry('merge-base', live, work);
+  const mergeBase = gitTry("merge-base", live, work);
   if (!mergeBase) return null;
 
   const liveTrees = new Set(
-    gitTry('rev-list', `${mergeBase}..${live}`)
-      .split('\n')
+    gitTry("rev-list", `${mergeBase}..${live}`)
+      .split("\n")
       .filter(Boolean)
-      .map((sha) => gitTry('rev-parse', `${sha}^{tree}`))
+      .map((sha) => gitTry("rev-parse", `${sha}^{tree}`))
       .filter(Boolean),
   );
   if (liveTrees.size === 0) return null;
 
-  const workShas = gitTry('rev-list', `${live}..${work}`).split('\n').filter(Boolean); // newest first
+  const workShas = gitTry("rev-list", `${live}..${work}`).split("\n").filter(Boolean); // newest first
   for (const sha of workShas) {
-    const tree = gitTry('rev-parse', `${sha}^{tree}`);
+    const tree = gitTry("rev-parse", `${sha}^{tree}`);
     if (tree && liveTrees.has(tree)) return sha;
   }
   return null;
@@ -37,9 +37,9 @@ export function workCutPoint(live: string, work: string): string | null {
 // Assumes the caller has fetched/updated `live`. Returns false on conflict.
 export async function reparentWork(live: string, work: string): Promise<boolean> {
   const cut = workCutPoint(live, work);
-  await gitRun('checkout', work);
+  await gitRun("checkout", work);
   if (cut) {
-    return gitRunAllowFail('rebase', '--onto', live, cut, work);
+    return gitRunAllowFail("rebase", "--onto", live, cut, work);
   }
-  return gitRunAllowFail('rebase', live);
+  return gitRunAllowFail("rebase", live);
 }

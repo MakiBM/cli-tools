@@ -1,9 +1,9 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { globSync } from 'glob';
-import ignoreLib from 'ignore';
-import { lookupReplacement } from './matching.js';
-import { loadTheme, type ThemeAddition } from './theme-loader.js';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { globSync } from "glob";
+import ignoreLib from "ignore";
+import { lookupReplacement } from "./matching.js";
+import { loadTheme, type ThemeAddition } from "./theme-loader.js";
 
 // Matches Tailwind arbitrary-value utility classes. The trailing
 // (?!(?:\/[\w-]+)?:) rejects arbitrary VARIANT selectors (`data-[…]:`,
@@ -26,7 +26,7 @@ export const extractArbitraryClasses = (text: string): ArbitraryClass[] => {
   while ((m = ARB_RE.exec(text)) !== null) {
     out.push({
       full: m[0],
-      prefix: m[1].replace(/-$/, ''),
+      prefix: m[1].replace(/-$/, ""),
       value: m[2],
       index: m.index,
     });
@@ -34,18 +34,18 @@ export const extractArbitraryClasses = (text: string): ArbitraryClass[] => {
   return out;
 };
 
-const DEFAULT_EXTS = '{js,jsx,ts,tsx,mjs,cjs,vue,svelte,astro,html,htm,mdx}';
+const DEFAULT_EXTS = "{js,jsx,ts,tsx,mjs,cjs,vue,svelte,astro,html,htm,mdx}";
 
 const DEFAULT_IGNORE = [
-  '**/node_modules/**',
-  '**/.git/**',
-  '**/dist/**',
-  '**/build/**',
-  '**/.next/**',
-  '**/out/**',
-  '**/coverage/**',
-  '**/.turbo/**',
-  '**/.cache/**',
+  "**/node_modules/**",
+  "**/.git/**",
+  "**/dist/**",
+  "**/build/**",
+  "**/.next/**",
+  "**/out/**",
+  "**/coverage/**",
+  "**/.turbo/**",
+  "**/.cache/**",
 ];
 
 export interface Hit {
@@ -95,7 +95,7 @@ const expandIfDir = (p: string): string => {
 const deriveRoots = (patterns: string[], cwd: string): string[] => {
   const roots = new Set<string>();
   for (const p of patterns) {
-    const cleanRoot = p.split('**')[0].replace(/[\\/]$/, '');
+    const cleanRoot = p.split("**")[0].replace(/[\\/]$/, "");
     if (cleanRoot && fs.existsSync(cleanRoot)) {
       try {
         const stat = fs.statSync(cleanRoot);
@@ -119,14 +119,14 @@ const makeGitignoreChecker = (enabled: boolean): ((absFile: string) => boolean) 
       } else {
         let ig: Ignore | null = null;
         try {
-          ig = ignoreLib().add(fs.readFileSync(path.join(dir, '.gitignore'), 'utf8'));
+          ig = ignoreLib().add(fs.readFileSync(path.join(dir, ".gitignore"), "utf8"));
         } catch {}
         cache.set(dir, ig);
         if (ig) chain.push({ dir, ig });
       }
       const parent = path.dirname(dir);
       if (parent === dir) break;
-      if (fs.existsSync(path.join(dir, '.git'))) break;
+      if (fs.existsSync(path.join(dir, ".git"))) break;
       dir = parent;
     }
     return chain;
@@ -135,7 +135,7 @@ const makeGitignoreChecker = (enabled: boolean): ((absFile: string) => boolean) 
     if (!enabled) return false;
     for (const { dir, ig } of loadChain(path.dirname(absFile))) {
       const rel = path.relative(dir, absFile);
-      if (!rel || rel.startsWith('..')) continue;
+      if (!rel || rel.startsWith("..")) continue;
       if (ig.ignores(rel)) return true;
     }
     return false;
@@ -179,9 +179,7 @@ export const scan = (options: ScanOptions = {}): ScanResult => {
 
   let files: string[] = [];
   for (const p of patterns) {
-    files = files.concat(
-      globSync(p, { cwd, ignore, nodir: true, dot: false, absolute: true }),
-    );
+    files = files.concat(globSync(p, { cwd, ignore, nodir: true, dot: false, absolute: true }));
   }
   files = [...new Set(files)];
   if (useGitignore) files = files.filter((f) => !isGitIgnored(f));
@@ -193,11 +191,11 @@ export const scan = (options: ScanOptions = {}): ScanResult => {
   for (const file of files) {
     let text: string;
     try {
-      text = fs.readFileSync(file, 'utf8');
+      text = fs.readFileSync(file, "utf8");
     } catch {
       continue;
     }
-    if (!text.includes('-[')) continue;
+    if (!text.includes("-[")) continue;
 
     const lineStarts = [0];
     for (let i = 0; i < text.length; i++) {

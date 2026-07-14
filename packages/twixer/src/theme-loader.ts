@@ -1,14 +1,14 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { globSync } from 'glob';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { globSync } from "glob";
 import {
   NAMESPACE_ALIASES,
   type NamespaceKey,
   type Table,
   type Theme,
   createTheme,
-} from './tw-defaults.js';
-import { normalizeValue } from './matching.js';
+} from "./tw-defaults.js";
+import { normalizeValue } from "./matching.js";
 
 export interface ThemeAddition {
   ns: NamespaceKey;
@@ -22,11 +22,11 @@ export interface ThemeAddition {
 export const loadThemeFromCss = (theme: Theme, file: string, additions: ThemeAddition[]): void => {
   let content: string;
   try {
-    content = fs.readFileSync(file, 'utf8');
+    content = fs.readFileSync(file, "utf8");
   } catch {
     return;
   }
-  content = content.replace(/\/\*[\s\S]*?\*\//g, '');
+  content = content.replace(/\/\*[\s\S]*?\*\//g, "");
   const declRe = /--([a-zA-Z0-9_-]+)\s*:\s*([^;]+);/g;
   const aliasesDesc = Object.keys(NAMESPACE_ALIASES).sort((a, b) => b.length - a.length);
   let m: RegExpExecArray | null;
@@ -34,14 +34,14 @@ export const loadThemeFromCss = (theme: Theme, file: string, additions: ThemeAdd
     const fullName = m[1];
     const rawValue = m[2].trim();
     // v4: bare `--spacing: 0.25rem;` sets the spacing multiplier.
-    if (fullName === 'spacing') {
+    if (fullName === "spacing") {
       const norm = normalizeValue(rawValue);
       const mPx = norm.match(/^(-?\d*\.?\d+)px$/);
       if (mPx) theme.spacingBase.px = parseFloat(mPx[1]);
       continue;
     }
     // Skip companion declarations like `--text-sm--line-height`.
-    if (fullName.includes('--')) continue;
+    if (fullName.includes("--")) continue;
     for (const alias of aliasesDesc) {
       if (fullName.startsWith(`${alias}-`)) {
         const name = fullName.slice(alias.length + 1);
@@ -68,7 +68,7 @@ export const findTailwindThemeCss = (roots: string[]): string | null => {
   for (const root of roots) {
     let dir = path.resolve(root);
     while (true) {
-      const p = path.join(dir, 'node_modules', 'tailwindcss', 'theme.css');
+      const p = path.join(dir, "node_modules", "tailwindcss", "theme.css");
       if (fs.existsSync(p)) return p;
       const parent = path.dirname(dir);
       if (parent === dir) break;
@@ -91,13 +91,15 @@ export interface LoadThemeOptions {
 
 export class TailwindNotFoundError extends Error {
   constructor() {
-    super('tailwindcss not found in node_modules. Install it (npm i tailwindcss) and re-run.');
-    this.name = 'TailwindNotFoundError';
+    super("tailwindcss not found in node_modules. Install it (npm i tailwindcss) and re-run.");
+    this.name = "TailwindNotFoundError";
   }
 }
 
 /** Build a fresh theme from framework defaults plus user CSS. */
-export const loadTheme = (options: LoadThemeOptions): { theme: Theme; additions: ThemeAddition[] } => {
+export const loadTheme = (
+  options: LoadThemeOptions,
+): { theme: Theme; additions: ThemeAddition[] } => {
   const theme = createTheme();
   const additions: ThemeAddition[] = [];
 
@@ -113,7 +115,7 @@ export const loadTheme = (options: LoadThemeOptions): { theme: Theme; additions:
   if (options.useUserTheme) {
     const userCssFiles = new Set<string>();
     for (const root of options.roots) {
-      for (const f of globSync(path.join(root, '**/*.css'), {
+      for (const f of globSync(path.join(root, "**/*.css"), {
         ignore: options.ignore,
         nodir: true,
         absolute: true,

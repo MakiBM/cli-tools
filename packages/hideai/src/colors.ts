@@ -1,1 +1,1 @@
-export { accent } from '@makibm/cli-kit';
+export { accent } from "@makibm/cli-kit";

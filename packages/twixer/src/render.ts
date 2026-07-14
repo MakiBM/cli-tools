@@ -1,5 +1,5 @@
-import * as path from 'node:path';
-import type { Hit, ScanResult } from './scan.js';
+import * as path from "node:path";
+import type { Hit, ScanResult } from "./scan.js";
 
 export interface RenderOptions {
   color: boolean;
@@ -10,12 +10,12 @@ export interface RenderOptions {
 const makeColors = (useColor: boolean) => {
   const c = (code: string, s: string): string => (useColor ? `\x1b[${code}m${s}\x1b[0m` : s);
   return {
-    dim: (s: string) => c('2', s),
-    bold: (s: string) => c('1', s),
-    cyan: (s: string) => c('36', s),
-    yellow: (s: string) => c('33', s),
-    green: (s: string) => c('32', s),
-    red: (s: string) => c('31', s),
+    dim: (s: string) => c("2", s),
+    bold: (s: string) => c("1", s),
+    cyan: (s: string) => c("36", s),
+    yellow: (s: string) => c("33", s),
+    green: (s: string) => c("32", s),
+    red: (s: string) => c("31", s),
     orange: (s: string) => (useColor ? `\x1b[38;5;208m${s}\x1b[0m` : s),
   };
 };
@@ -27,8 +27,8 @@ const fmtRep = (
   rep: string | null | undefined,
   approx: boolean | undefined,
 ): string => {
-  if (!rep) return '';
-  const sep = approx ? p.dim('~>') : p.dim('->');
+  if (!rep) return "";
+  const sep = approx ? p.dim("~>") : p.dim("->");
   const color = approx ? p.orange : p.green;
   return `  ${sep}  ${color(rep)}`;
 };
@@ -38,7 +38,7 @@ export const renderHits = (result: ScanResult, options: RenderOptions): string =
   const p = makeColors(options.color);
   const { hits } = result;
 
-  if (!hits.length) return p.green('No arbitrary-value classes found. 🎉');
+  if (!hits.length) return p.green("No arbitrary-value classes found. 🎉");
 
   const repByCls = new Map<string, { rep: string | null; approx: boolean }>();
   for (const h of hits) repByCls.set(h.cls, { rep: h.replacement, approx: h.approx });
@@ -50,9 +50,11 @@ export const renderHits = (result: ScanResult, options: RenderOptions): string =
     for (const h of hits) counts.set(h.cls, (counts.get(h.cls) ?? 0) + 1);
     for (const [cls, n] of [...counts.entries()].sort((a, b) => b[1] - a[1])) {
       const entry = repByCls.get(cls);
-      lines.push(`${String(n).padStart(5)}  ${p.yellow(cls)}${fmtRep(p, entry?.rep, entry?.approx)}`);
+      lines.push(
+        `${String(n).padStart(5)}  ${p.yellow(cls)}${fmtRep(p, entry?.rep, entry?.approx)}`,
+      );
     }
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   if (options.group) {
@@ -66,8 +68,9 @@ export const renderHits = (result: ScanResult, options: RenderOptions): string =
       lines.push(
         `${p.bold(p.yellow(cls))} ${p.dim(`(${occ.length})`)}${fmtRep(p, entry?.rep, entry?.approx)}`,
       );
-      for (const h of occ) lines.push(`  ${p.cyan(h.file)}${p.dim(':')}${h.line}${p.dim(':')}${h.col}`);
-      lines.push('');
+      for (const h of occ)
+        lines.push(`  ${p.cyan(h.file)}${p.dim(":")}${h.line}${p.dim(":")}${h.col}`);
+      lines.push("");
     }
   } else {
     const byFile = new Map<string, Hit[]>();
@@ -82,7 +85,7 @@ export const renderHits = (result: ScanResult, options: RenderOptions): string =
           `  ${p.dim(`${h.line}:${h.col}`.padEnd(8))}${p.yellow(h.cls)}${fmtRep(p, h.replacement, h.approx)}`,
         );
       }
-      lines.push('');
+      lines.push("");
     }
   }
 
@@ -90,12 +93,12 @@ export const renderHits = (result: ScanResult, options: RenderOptions): string =
   const uniqueFiles = new Set(hits.map((h) => h.file)).size;
   lines.push(
     p.bold(
-      `${hits.length} occurrence${hits.length === 1 ? '' : 's'} · ` +
-        `${uniqueClasses} unique class${uniqueClasses === 1 ? '' : 'es'} · ` +
-        `${uniqueFiles} file${uniqueFiles === 1 ? '' : 's'}`,
+      `${hits.length} occurrence${hits.length === 1 ? "" : "s"} · ` +
+        `${uniqueClasses} unique class${uniqueClasses === 1 ? "" : "es"} · ` +
+        `${uniqueFiles} file${uniqueFiles === 1 ? "" : "s"}`,
     ),
   );
-  return lines.join('\n');
+  return lines.join("\n");
 };
 
 export const renderJson = (result: ScanResult): string =>
@@ -104,7 +107,7 @@ export const renderJson = (result: ScanResult): string =>
 /** Render the loaded theme tokens (for --show-theme). */
 export const renderTheme = (result: ScanResult, useColor: boolean, cwd: string): string => {
   const p = makeColors(useColor);
-  if (!result.additions.length) return p.dim('No theme tokens loaded.');
+  if (!result.additions.length) return p.dim("No theme tokens loaded.");
   const bySource = new Map<string, typeof result.additions>();
   for (const a of result.additions) {
     if (!bySource.has(a.source)) bySource.set(a.source, []);
@@ -113,8 +116,11 @@ export const renderTheme = (result: ScanResult, useColor: boolean, cwd: string):
   const lines: string[] = [];
   for (const [src, items] of bySource) {
     lines.push(p.bold(p.cyan(path.relative(cwd, src))) + p.dim(` (${items.length})`));
-    for (const a of items) lines.push(`  ${p.dim(a.ns + '-')}${p.yellow(a.name)} ${p.dim('=')} ${a.rawValue}`);
+    for (const a of items)
+      lines.push(`  ${p.dim(a.ns + "-")}${p.yellow(a.name)} ${p.dim("=")} ${a.rawValue}`);
   }
-  lines.push(p.dim(`\nspacing base: ${result.spacingBasePx}px · ${result.additions.length} tokens`));
-  return lines.join('\n');
+  lines.push(
+    p.dim(`\nspacing base: ${result.spacingBasePx}px · ${result.additions.length} tokens`),
+  );
+  return lines.join("\n");
 };

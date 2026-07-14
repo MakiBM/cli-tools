@@ -1,11 +1,11 @@
-import { Spinner as KitSpinner, green, red } from '@makibm/cli-kit';
+import { Spinner as KitSpinner, green, red } from "@makibm/cli-kit";
 
 function spinnerEnabled(): boolean {
   return Boolean(process.stdout.isTTY) && !process.env.GITES_VERBOSE;
 }
 
 export class Spinner extends KitSpinner {
-  constructor(label = 'Working...') {
+  constructor(label = "Working...") {
     super(label, { enabled: spinnerEnabled() });
   }
 }
@@ -19,7 +19,7 @@ export async function withSpinner<T>(
   spinner.start();
   try {
     const result = await fn();
-    spinner.stop(successLine ?? `${green('✔')} ${label}`);
+    spinner.stop(successLine ?? `${green("✔")} ${label}`);
     return result;
   } catch (error) {
     spinner.stop(red(`✗ ${label}`));

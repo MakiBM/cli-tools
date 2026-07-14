@@ -1,6 +1,6 @@
-export { checkbox, confirm, input, select } from '@inquirer/prompts';
+export { checkbox, confirm, input, select } from "@inquirer/prompts";
 
-import { select } from '@inquirer/prompts';
+import { select } from "@inquirer/prompts";
 
 export interface MenuChoice<T> {
   name: string;

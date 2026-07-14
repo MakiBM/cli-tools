@@ -1,11 +1,11 @@
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { existsSync, mkdirSync, copyFileSync, chmodSync, readFileSync } from 'node:fs';
-import { git, gitTry } from './git.js';
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, copyFileSync, chmodSync, readFileSync } from "node:fs";
+import { git, gitTry } from "./git.js";
 
-const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const HOOK_SRC = join(PKG_ROOT, 'hooks', 'pre-push');
-const HOOK_MARKER = '# gites pre-push hook';
+const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const HOOK_SRC = join(PKG_ROOT, "hooks", "pre-push");
+const HOOK_MARKER = "# gites pre-push hook";
 
 export interface HookInstall {
   path: string;
@@ -15,18 +15,18 @@ export interface HookInstall {
 }
 
 function hookTargetPath(): { path: string; underHooksPath: boolean } {
-  const hooksPath = gitTry('config', 'core.hooksPath');
+  const hooksPath = gitTry("config", "core.hooksPath");
   if (hooksPath) {
-    return { path: join(hooksPath, 'pre-push'), underHooksPath: true };
+    return { path: join(hooksPath, "pre-push"), underHooksPath: true };
   }
-  const gitDir = git('rev-parse', '--git-dir');
-  return { path: join(gitDir, 'hooks', 'pre-push'), underHooksPath: false };
+  const gitDir = git("rev-parse", "--git-dir");
+  return { path: join(gitDir, "hooks", "pre-push"), underHooksPath: false };
 }
 
 function isOurHook(path: string): boolean {
   if (!existsSync(path)) return false;
   try {
-    return readFileSync(path, 'utf8').includes(HOOK_MARKER);
+    return readFileSync(path, "utf8").includes(HOOK_MARKER);
   } catch {
     return false;
   }

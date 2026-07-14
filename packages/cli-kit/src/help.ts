@@ -1,4 +1,4 @@
-import { accent, bold, dim } from './palette.js';
+import { accent, bold, dim } from "./palette.js";
 
 export interface HelpCommand {
   name: string;
@@ -23,24 +23,24 @@ function section(title: string, rows: Array<[string, string]>): string[] {
   for (const [left, right] of rows) {
     lines.push(`  ${accent(left.padEnd(width))}  ${dim(right)}`);
   }
-  lines.push('');
+  lines.push("");
   return lines;
 }
 
 /** Render a consistent help screen from a usage line, commands and options. */
 export function formatHelp(spec: HelpSpec): string {
-  const lines: string[] = [bold('Usage:'), `  ${spec.usage}`, ''];
+  const lines: string[] = [bold("Usage:"), `  ${spec.usage}`, ""];
   lines.push(
     ...section(
-      'Commands:',
+      "Commands:",
       (spec.commands ?? []).map((c) => [c.name, c.summary] as [string, string]),
     ),
   );
   lines.push(
     ...section(
-      'Options:',
+      "Options:",
       (spec.options ?? []).map((o) => [o.flag, o.summary] as [string, string]),
     ),
   );
-  return lines.join('\n').replace(/\n+$/, '');
+  return lines.join("\n").replace(/\n+$/, "");
 }
