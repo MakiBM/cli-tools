@@ -1,5 +1,5 @@
 import { git, gitRun, gitRunAllowFail, branchExists } from './git.js';
-import { originRemote, gitpaceRemote } from './remotes.js';
+import { originRemote, gitesRemote } from './remotes.js';
 import { workBranch, setBaseBranch } from './feature.js';
 import { addWorktree, worktreeEnabled } from './worktree.js';
 import { withSpinner } from './spinner.js';
@@ -9,17 +9,17 @@ export async function startFeature(
   base: string = 'main',
   worktree: boolean = worktreeEnabled(),
 ): Promise<void> {
-  if (!name) throw new Error('Usage: gitpace start-feature <name> [base]');
+  if (!name) throw new Error('Usage: gites start-feature <name> [base]');
 
   const work = workBranch(name);
   const origin = originRemote();
-  const remote = gitpaceRemote();
+  const remote = gitesRemote();
 
   if (branchExists(name)) {
     throw new Error(`Branch '${name}' already exists. Delete it first or pick a different name.`);
   }
 
-  git('config', 'gitpace.branch', name);
+  git('config', 'gites.branch', name);
   setBaseBranch(name, base);
 
   if (worktree) {

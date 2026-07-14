@@ -1,12 +1,12 @@
 import { isGitRepo } from './git.js';
 
-const HELP = `Usage: gitpace [command]
+const HELP = `Usage: gites [command]
 
 Commands:
   (default)             Open the interactive TUI
-  start-feature <name> [base]  Create <name> + gitpace-<name> from origin/<base> (default main)
-  attach                Create gitpace-<current> from current origin feature branch
-  switch                Switch between gitpace-managed features (prints path for worktree ones)
+  start-feature <name> [base]  Create <name> + gites-<name> from origin/<base> (default main)
+  attach                Create gites-<current> from current origin feature branch
+  switch                Switch between gites-managed features (prints path for worktree ones)
   change-base           Re-parent the active feature onto a new base branch (PR chains)
   ship                  Cherry-pick commits to the live branch with custom timestamps
   resync                Pull origin and rebase working branches
@@ -22,7 +22,7 @@ PR chains:
 Worktrees:
   With --worktree, start-feature creates the feature in its own git worktree
   under <repo>.worktrees/<name>, so several features can be worked on at once.
-  Set 'git config gitpace.worktree true' to make it the default.
+  Set 'git config gites.worktree true' to make it the default.
 
 Flags:
   -v, --verbose         Show underlying git output
@@ -41,7 +41,7 @@ export async function run(args: string[]): Promise<void> {
   let worktree: boolean | undefined;
   for (const a of args) {
     if (a === '--verbose' || a === '-v') {
-      process.env.GITPACE_VERBOSE = '1';
+      process.env.GITES_VERBOSE = '1';
     } else if (a === '--worktree') {
       worktree = true;
     } else if (a === '--no-worktree') {

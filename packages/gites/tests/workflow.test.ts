@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   setupSandbox,
@@ -26,7 +26,8 @@ async function withSandbox(fn: (ctx: SandboxContext) => Promise<void> | void): P
 }
 
 async function importFresh<T = unknown>(mod: string): Promise<T> {
-  const url = new URL(`../src/${mod}`, import.meta.url).href + `?t=${Date.now()}-${Math.random()}`;
+  const nonce = `${Date.now()}${Math.round(Math.random() * 1e9)}`;
+  const url = new URL(`../src/${mod}`, import.meta.url).href + `?t=${nonce}`;
   return import(url) as Promise<T>;
 }
 
@@ -45,7 +46,7 @@ test('setup adds remote + installs hook without touching hooksPath/pushDefault/a
     const { readFileSync, existsSync } = await import('node:fs');
     const hookPath = `${work}/.git/hooks/pre-push`;
     assert.ok(existsSync(hookPath), 'pre-push hook should be installed');
-    assert.match(readFileSync(hookPath, 'utf8'), /gitpace pre-push hook/);
+    assert.match(readFileSync(hookPath, 'utf8'), /gites pre-push hook/);
 
     assert.equal(run('git', ['config', '--default', '', 'core.hooksPath']).trim(), '');
     assert.equal(run('git', ['config', '--default', '', 'remote.pushDefault']).trim(), '');
@@ -53,7 +54,7 @@ test('setup adds remote + installs hook without touching hooksPath/pushDefault/a
   });
 });
 
-test('start-feature creates feature + gitpace-<name>, defers origin push until ship', async () => {
+test('start-feature creates feature + gites-<name>, defers origin push until ship', async () => {
   await withSandbox(async ({ remote }) => {
     run('git', ['remote', 'remove', TEST_REMOTE]);
     const { runSetup } = await importFresh<typeof import('../src/setup.js')>('setup.ts');
@@ -64,12 +65,12 @@ test('start-feature creates feature + gitpace-<name>, defers origin push until s
     await startFeature('feature-x');
 
     assert.ok(branchExists('feature-x'));
-    assert.ok(branchExists('gitpace-feature-x'));
-    assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'gitpace-feature-x');
-    assert.equal(run('git', ['config', 'gitpace.branch']).trim(), 'feature-x');
-    assert.equal(run('git', ['config', 'branch.feature-x.gitpacebase']).trim(), 'main');
+    assert.ok(branchExists('gites-feature-x'));
+    assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'gites-feature-x');
+    assert.equal(run('git', ['config', 'gites.branch']).trim(), 'feature-x');
+    assert.equal(run('git', ['config', 'branch.feature-x.gitesbase']).trim(), 'main');
     assert.ok(!remoteHasBranch(TEST_ORIGIN, 'feature-x'), 'live branch stays local until ship');
-    assert.ok(remoteHasBranch(TEST_REMOTE, 'gitpace-feature-x'));
+    assert.ok(remoteHasBranch(TEST_REMOTE, 'gites-feature-x'));
   });
 });
 
@@ -84,7 +85,7 @@ test('start-feature --worktree creates a worktree, leaves main checked out', asy
     await startFeature('wt', 'main', true);
 
     assert.ok(branchExists('wt'));
-    assert.ok(branchExists('gitpace-wt'));
+    assert.ok(branchExists('gites-wt'));
     assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'main', 'main HEAD untouched');
 
     const { worktreeForFeature } = await importFresh<typeof import('../src/worktree.js')>(
@@ -97,10 +98,10 @@ test('start-feature --worktree creates a worktree, leaves main checked out', asy
     assert.ok(existsSync(path), 'worktree dir should exist');
     assert.equal(
       run('git', ['-C', path, 'symbolic-ref', '--short', 'HEAD']).trim(),
-      'gitpace-wt',
+      'gites-wt',
     );
     assert.ok(!remoteHasBranch(TEST_ORIGIN, 'wt'), 'live branch stays local until ship');
-    assert.ok(remoteHasBranch(TEST_REMOTE, 'gitpace-wt'));
+    assert.ok(remoteHasBranch(TEST_REMOTE, 'gites-wt'));
   });
 });
 
@@ -129,10 +130,10 @@ test('attach adopts existing origin branch', async () => {
     const { attach } = await importFresh<typeof import('../src/attach.js')>('attach.ts');
     await attach();
 
-    assert.ok(branchExists('gitpace-existing-feat'));
-    assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'gitpace-existing-feat');
-    assert.equal(run('git', ['config', 'gitpace.branch']).trim(), 'existing-feat');
-    assert.ok(remoteHasBranch(TEST_REMOTE, 'gitpace-existing-feat'));
+    assert.ok(branchExists('gites-existing-feat'));
+    assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'gites-existing-feat');
+    assert.equal(run('git', ['config', 'gites.branch']).trim(), 'existing-feat');
+    assert.ok(remoteHasBranch(TEST_REMOTE, 'gites-existing-feat'));
   });
 });
 
@@ -161,7 +162,7 @@ test('resync fast-forwards main and rebases working branches', async () => {
 
     const log = run('git', ['log', '--format=%s', 'main']).trim();
     assert.match(log, /teammate commit/);
-    assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'gitpace-feat-r');
+    assert.equal(run('git', ['symbolic-ref', '--short', 'HEAD']).trim(), 'gites-feat-r');
   });
 });
 
@@ -185,7 +186,7 @@ test('feature discovery lists pairs and active', async () => {
   });
 });
 
-test('pre-push hook blocks gitpace-* to origin', async () => {
+test('pre-push hook blocks gites-* to origin', async () => {
   await withSandbox(async ({ remote }) => {
     run('git', ['remote', 'remove', TEST_REMOTE]);
     const { runSetup } = await importFresh<typeof import('../src/setup.js')>('setup.ts');
@@ -194,7 +195,7 @@ test('pre-push hook blocks gitpace-* to origin', async () => {
       'start-feature.ts',
     );
     await startFeature('blockme');
-    const r = runTry('git', ['push', TEST_ORIGIN, 'gitpace-blockme']);
+    const r = runTry('git', ['push', TEST_ORIGIN, 'gites-blockme']);
     assert.notEqual(r.status, 0);
     assert.match(String(r.stderr) + String(r.stdout), /BLOCKED/);
   });

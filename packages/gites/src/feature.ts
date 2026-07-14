@@ -1,13 +1,13 @@
 import { gitTry, branchExists, currentBranch, getConfig, setConfig } from './git.js';
 
-const WORK_PREFIX = 'gitpace-';
+const WORK_PREFIX = 'gites-';
 
 export function baseBranch(name: string): string {
-  return getConfig(`branch.${name}.gitpacebase`) || 'main';
+  return getConfig(`branch.${name}.gitesbase`) || 'main';
 }
 
 export function setBaseBranch(name: string, base: string): void {
-  setConfig(`branch.${name}.gitpacebase`, base);
+  setConfig(`branch.${name}.gitesbase`, base);
 }
 
 export function workBranch(name: string): string {
@@ -43,7 +43,7 @@ export function activeFeature(): string {
   if (head && head !== 'main' && branchExists(workBranch(head))) {
     return head;
   }
-  const cfg = getConfig('gitpace.branch');
+  const cfg = getConfig('gites.branch');
   if (cfg && branchExists(cfg) && branchExists(workBranch(cfg))) return cfg;
   return '';
 }
@@ -70,6 +70,6 @@ export function resolveLiveBranch(): ResolvedLive {
   if (head && head !== 'main' && branchExists(workBranch(head))) {
     return { live: head, head };
   }
-  const cfg = getConfig('gitpace.branch');
+  const cfg = getConfig('gites.branch');
   return { live: cfg, head };
 }

@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export const TEST_ORIGIN = 'test-origin';
-export const TEST_REMOTE = 'test-gitpace';
+export const TEST_REMOTE = 'test-gites';
 
 export interface SandboxContext {
   sandbox: string;
@@ -20,9 +20,9 @@ export interface SandboxContext {
 }
 
 export function setupSandbox(): SandboxContext {
-  const sandbox = mkdtempSync(join(tmpdir(), 'gitpace-test-'));
+  const sandbox = mkdtempSync(join(tmpdir(), 'gites-test-'));
   const origin = join(sandbox, 'origin.git');
-  const remote = join(sandbox, 'gitpace.git');
+  const remote = join(sandbox, 'gites.git');
   const work = join(sandbox, 'work');
 
   run('git', ['init', '--bare', origin]);
@@ -34,8 +34,8 @@ export function setupSandbox(): SandboxContext {
   try {
     run('git', ['config', 'user.email', 'test@test.com']);
     run('git', ['config', 'user.name', 'Test']);
-    run('git', ['config', 'gitpace.origin', TEST_ORIGIN]);
-    run('git', ['config', 'gitpace.remote', TEST_REMOTE]);
+    run('git', ['config', 'gites.origin', TEST_ORIGIN]);
+    run('git', ['config', 'gites.remote', TEST_REMOTE]);
     writeFileSync(join(work, 'README.md'), 'init\n');
     run('git', ['add', 'README.md']);
     run('git', ['commit', '-m', 'initial commit']);

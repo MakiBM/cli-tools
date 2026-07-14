@@ -73,5 +73,5 @@ export async function removeWorktree(path: string): Promise<void> {
 }
 
 export function worktreeEnabled(): boolean {
-  return getConfig('gitpace.worktree') === 'true';
+  return getConfig('gites.worktree') === 'true';
 }

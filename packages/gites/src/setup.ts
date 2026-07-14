@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { input, confirm } from '@inquirer/prompts';
 import pc from 'picocolors';
 import { git, gitTry, hasRemote, isGitRepo } from './git.js';
-import { originRemote, gitpaceRemote } from './remotes.js';
+import { originRemote, gitesRemote } from './remotes.js';
 import { worktreeEnabled } from './worktree.js';
 import { printBanner } from './banner.js';
 import { installHook, isHookInstalled } from './hook-install.js';
@@ -22,7 +22,7 @@ function checkRemoteReachable(url: string): RemoteCheck {
 }
 
 export function needsSetup(): boolean {
-  if (!hasRemote(gitpaceRemote())) return true;
+  if (!hasRemote(gitesRemote())) return true;
   if (!isHookInstalled()) return true;
   return false;
 }
@@ -35,13 +35,13 @@ export interface SetupOptions {
 
 export function runSetup(
   remoteUrl: string,
-  { originName = 'origin', remoteName = 'gitpace', worktree }: SetupOptions = {},
+  { originName = 'origin', remoteName = 'gites', worktree }: SetupOptions = {},
 ): void {
   if (!isGitRepo()) throw new Error('not inside a git repo');
 
-  if (originName !== 'origin') git('config', 'gitpace.origin', originName);
-  if (remoteName !== 'gitpace') git('config', 'gitpace.remote', remoteName);
-  if (worktree !== undefined) git('config', 'gitpace.worktree', String(worktree));
+  if (originName !== 'origin') git('config', 'gites.origin', originName);
+  if (remoteName !== 'gites') git('config', 'gites.remote', remoteName);
+  if (worktree !== undefined) git('config', 'gites.worktree', String(worktree));
 
   if (remoteUrl) {
     if (!hasRemote(remoteName)) {
@@ -62,7 +62,7 @@ export async function setupWizard(): Promise<void> {
   console.log('');
 
   const originName = originRemote();
-  const remoteName = gitpaceRemote();
+  const remoteName = gitesRemote();
 
   const originUrl = gitTry('remote', 'get-url', originName);
   if (originUrl) {
@@ -75,11 +75,11 @@ export async function setupWizard(): Promise<void> {
   const existingRemote = gitTry('remote', 'get-url', remoteName);
 
   let remoteUrl = '';
-  let suggested = existingRemote || 'git@github.com:you/gitpace-work.git';
+  let suggested = existingRemote || 'git@github.com:you/gites-work.git';
   let skipFirstValidate = false;
 
   if (existingRemote) {
-    console.log(`${pc.green('✔')} Gitpace remote found: ${pc.cyan(existingRemote)}`);
+    console.log(`${pc.green('✔')} Gites remote found: ${pc.cyan(existingRemote)}`);
     const keep = await confirm({ message: 'Keep this URL?', default: true });
     if (keep) {
       remoteUrl = existingRemote;
@@ -90,7 +90,7 @@ export async function setupWizard(): Promise<void> {
   for (;;) {
     if (!remoteUrl) {
       remoteUrl = await input({
-        message: `Gitpace remote (your own repo for the '${remoteName}/*' work branches):`,
+        message: `Gites remote (your own repo for the '${remoteName}/*' work branches):`,
         default: suggested,
       });
     }
@@ -115,8 +115,8 @@ export async function setupWizard(): Promise<void> {
     remoteUrl = '';
   }
 
-  if (originName !== 'origin') git('config', 'gitpace.origin', originName);
-  if (remoteName !== 'gitpace') git('config', 'gitpace.remote', remoteName);
+  if (originName !== 'origin') git('config', 'gites.origin', originName);
+  if (remoteName !== 'gites') git('config', 'gites.remote', remoteName);
 
   if (remoteUrl) {
     if (!hasRemote(remoteName)) {
@@ -130,7 +130,7 @@ export async function setupWizard(): Promise<void> {
   console.log(pc.bold('Worktrees'));
   console.log(pc.dim('  Give each new feature its own worktree so you can work on several at once.'));
   const worktree = await confirm({ message: 'Default new features to their own worktree?', default: worktreeEnabled() });
-  git('config', 'gitpace.worktree', String(worktree));
+  git('config', 'gites.worktree', String(worktree));
 
   console.log('');
   console.log(pc.bold('Git hook'));

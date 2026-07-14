@@ -1,55 +1,12 @@
-import pc from 'picocolors';
-import { accent } from './colors.js';
+import { Spinner as KitSpinner, green, red } from '@makibm/cli-kit';
 
-const FRAMES = [
-  '░░░░░░',
-  '░░░░░░',
-  '░░░░░░',
-  '░░░░░░',
-  '▓░░░░░',
-  '▒▓░░░░',
-  '░▒▓░░░',
-  '░░▒▓░░',
-  '░░░▒▓░',
-  '░░░░▒▓',
-  '░░░░░▒',
-];
-const INTERVAL = 100;
+function spinnerEnabled(): boolean {
+  return Boolean(process.stdout.isTTY) && !process.env.GITES_VERBOSE;
+}
 
-export class Spinner {
-  private label: string;
-  private i = 0;
-  private timer: NodeJS.Timeout | null = null;
-  private readonly enabled: boolean;
-
+export class Spinner extends KitSpinner {
   constructor(label = 'Working...') {
-    this.label = label;
-    this.enabled = Boolean(process.stdout.isTTY) && !process.env.GITPACE_VERBOSE;
-  }
-
-  start(): void {
-    if (!this.enabled) return;
-    process.stdout.write('\x1b[?25l');
-    this.render();
-    this.timer = setInterval(() => this.render(), INTERVAL);
-  }
-
-  private render(): void {
-    const frame = FRAMES[this.i % FRAMES.length]!;
-    process.stdout.write(`\r\x1b[2K${accent(frame)} ${this.label}`);
-    this.i++;
-  }
-
-  stop(finalLine?: string): void {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-    if (this.enabled) {
-      process.stdout.write('\r\x1b[2K');
-      process.stdout.write('\x1b[?25h');
-    }
-    if (finalLine !== undefined) console.log(finalLine);
+    super(label, { enabled: spinnerEnabled() });
   }
 }
 
@@ -58,14 +15,14 @@ export async function withSpinner<T>(
   fn: () => Promise<T>,
   successLine?: string,
 ): Promise<T> {
-  const s = new Spinner(label);
-  s.start();
+  const spinner = new Spinner(label);
+  spinner.start();
   try {
     const result = await fn();
-    s.stop(successLine ?? `${pc.green('✔')} ${label}`);
+    spinner.stop(successLine ?? `${green('✔')} ${label}`);
     return result;
-  } catch (e) {
-    s.stop(pc.red(`✗ ${label}`));
-    throw e;
+  } catch (error) {
+    spinner.stop(red(`✗ ${label}`));
+    throw error;
   }
 }

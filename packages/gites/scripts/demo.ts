@@ -8,9 +8,9 @@ import { select } from '@inquirer/prompts';
 import pc from 'picocolors';
 
 const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DEMO_ROOT = join(tmpdir(), 'gitpace-demo');
+const DEMO_ROOT = join(tmpdir(), 'gites-demo');
 const ORIGIN_REPO = join(DEMO_ROOT, 'origin.git');
-const GITPACE_REPO = join(DEMO_ROOT, 'gitpace.git');
+const GITES_REPO = join(DEMO_ROOT, 'gites.git');
 const WORK_DIR = join(DEMO_ROOT, 'work');
 
 function sh(cmd: string, args: string[], opts: ExecFileSyncOptions = {}): string {
@@ -32,26 +32,26 @@ function wipe(): void {
 function ensureBareRepos(): void {
   mkdirSync(DEMO_ROOT, { recursive: true });
   if (!existsSync(ORIGIN_REPO)) sh('git', ['init', '--bare', ORIGIN_REPO]);
-  if (!existsSync(GITPACE_REPO)) sh('git', ['init', '--bare', GITPACE_REPO]);
+  if (!existsSync(GITES_REPO)) sh('git', ['init', '--bare', GITES_REPO]);
 }
 
 function cloneWork(): void {
   sh('git', ['clone', ORIGIN_REPO, WORK_DIR]);
   shIn(WORK_DIR, 'git', ['config', 'user.email', 'demo@example.com']);
   shIn(WORK_DIR, 'git', ['config', 'user.name', 'Demo User']);
-  writeFileSync(join(WORK_DIR, 'README.md'), '# Demo project\n\nFake repo for poking at gitpace.\n');
+  writeFileSync(join(WORK_DIR, 'README.md'), '# Demo project\n\nFake repo for poking at gites.\n');
   shIn(WORK_DIR, 'git', ['add', 'README.md']);
   shIn(WORK_DIR, 'git', ['commit', '-m', 'initial commit']);
   shIn(WORK_DIR, 'git', ['push', 'origin', 'main']);
 }
 
 function runSetupNonInteractive(): void {
-  shIn(WORK_DIR, 'git', ['remote', 'add', 'gitpace', GITPACE_REPO]);
+  shIn(WORK_DIR, 'git', ['remote', 'add', 'gites', GITES_REPO]);
   const hookSrc = join(PKG_ROOT, 'hooks', 'pre-push');
   const hookDst = join(WORK_DIR, '.git', 'hooks', 'pre-push');
   sh('cp', [hookSrc, hookDst]);
   sh('chmod', ['+x', hookDst]);
-  shIn(WORK_DIR, 'git', ['push', 'gitpace', 'main']);
+  shIn(WORK_DIR, 'git', ['push', 'gites', 'main']);
 }
 
 function appendFile(name: string, content: string): void {
@@ -68,9 +68,9 @@ function startFeature(name: string, commits: string[] = []): void {
   shIn(WORK_DIR, 'git', ['checkout', 'main']);
   shIn(WORK_DIR, 'git', ['checkout', '-b', name]);
   shIn(WORK_DIR, 'git', ['push', '-u', 'origin', name]);
-  shIn(WORK_DIR, 'git', ['checkout', '-b', `gitpace-${name}`]);
-  shIn(WORK_DIR, 'git', ['push', '-u', 'gitpace', `gitpace-${name}`]);
-  shIn(WORK_DIR, 'git', ['config', 'gitpace.branch', name]);
+  shIn(WORK_DIR, 'git', ['checkout', '-b', `gites-${name}`]);
+  shIn(WORK_DIR, 'git', ['push', '-u', 'gites', `gites-${name}`]);
+  shIn(WORK_DIR, 'git', ['config', 'gites.branch', name]);
   for (const msg of commits) commit(msg, `${name}.txt`);
 }
 
@@ -99,8 +99,8 @@ const SCENARIOS: Record<string, Scenario> = {
       ensureBareRepos();
       cloneWork();
       console.log('');
-      console.log(pc.bold('When the setup wizard asks for the gitpace remote URL, paste:'));
-      console.log(pc.cyan(`  ${GITPACE_REPO}`));
+      console.log(pc.bold('When the setup wizard asks for the gites remote URL, paste:'));
+      console.log(pc.cyan(`  ${GITES_REPO}`));
       console.log('');
     },
   },
@@ -167,13 +167,13 @@ function printState(): void {
   console.log(pc.dim('Demo sandbox:'));
   console.log(pc.dim(`  work:   ${WORK_DIR}`));
   console.log(pc.dim(`  origin: ${ORIGIN_REPO}`));
-  console.log(pc.dim(`  gitpace: ${GITPACE_REPO}`));
+  console.log(pc.dim(`  gites: ${GITES_REPO}`));
   console.log('');
 }
 
 function launchTui(): number {
   // Run via tsx so the demo works directly from source (no build step required).
-  const r = spawnSync('npx', ['tsx', join(PKG_ROOT, 'bin', 'gitpace.ts')], {
+  const r = spawnSync('npx', ['tsx', join(PKG_ROOT, 'bin', 'gites.ts')], {
     cwd: WORK_DIR,
     stdio: 'inherit',
   });
@@ -218,7 +218,7 @@ async function main(): Promise<void> {
   console.log(pc.bold(pc.magenta(`Seeding scenario: ${scenario}`)));
   sc.seed();
   printState();
-  console.log(pc.bold('Launching gitpace TUI in the sandbox. Ctrl+C or "Quit" to exit.'));
+  console.log(pc.bold('Launching gites TUI in the sandbox. Ctrl+C or "Quit" to exit.'));
   console.log('');
   process.exit(launchTui());
 }

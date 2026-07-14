@@ -1,10 +1,10 @@
 {
-  "name": "gitpace",
-  "version": "0.6.1",
+  "name": "@makibm/gites",
+  "version": "1.0.0",
   "description": "Two-track git workflow for batching and timing client commits",
   "type": "module",
   "bin": {
-    "gitpace": "./dist/bin/gitpace.js"
+    "gites": "./dist/bin/gites.js"
   },
   "files": [
     "dist",
@@ -13,10 +13,17 @@
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MakiBM/makibm-tools.git",
+    "directory": "packages/gites"
+  },
+  "author": "Bartek Makos",
+  "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/bin/gitpace.js",
-    "dev": "tsx bin/gitpace.ts",
-    "test": "tsx --test --test-concurrency=1 'tests/**/*.test.ts'",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/bin/gites.js",
+    "dev": "tsx bin/gites.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "demo": "tsx scripts/demo.ts",
     "demo:reset": "tsx scripts/demo.ts --reset",
@@ -24,6 +31,7 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^7.2.0",
+    "@makibm/cli-kit": "workspace:^",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {

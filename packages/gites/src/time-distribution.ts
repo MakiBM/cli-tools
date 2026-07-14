@@ -91,7 +91,7 @@ export function genSchedule(count: number, days: readonly DayWindow[], gap: numb
   const spans = days.map((d) => Math.max(0, d.endMin - d.startMin));
   const total = spans.reduce((a, b) => a + b, 0);
 
-  const alloc = new Array<number>(n).fill(0);
+  const alloc: number[] = Array.from({ length: n }, () => 0);
   if (total === 0) {
     alloc[n - 1] = count;
   } else {

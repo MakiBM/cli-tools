@@ -6,7 +6,7 @@ import { worktreeForFeature } from './worktree.js';
 export async function switchFeature(): Promise<void> {
   const features = listFeatures();
   if (features.length === 0) {
-    throw new Error('No gitpace-managed features found.');
+    throw new Error('No gites-managed features found.');
   }
 
   const pick = await select({
@@ -25,6 +25,6 @@ export async function switchFeature(): Promise<void> {
   }
 
   await gitRun('checkout', workBranch(pick));
-  git('config', 'gitpace.branch', pick);
+  git('config', 'gites.branch', pick);
   console.log(`Switched to '${workBranch(pick)}'.`);
 }

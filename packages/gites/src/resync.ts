@@ -3,7 +3,7 @@ import { gitRun, gitRunAllowFail, gitOk, branchExists } from './git.js';
 import { resolveLiveBranch, workBranch, baseBranch } from './feature.js';
 import { reparentWork } from './reparent.js';
 import { branchCheckedOutElsewhere } from './worktree.js';
-import { originRemote, gitpaceRemote } from './remotes.js';
+import { originRemote, gitesRemote } from './remotes.js';
 import { accent } from './colors.js';
 import { withSpinner } from './spinner.js';
 
@@ -14,7 +14,7 @@ export async function resync(): Promise<void> {
   const { live } = resolveLiveBranch();
   const work = live ? workBranch(live) : '';
   const origin = originRemote();
-  const remote = gitpaceRemote();
+  const remote = gitesRemote();
 
   const title = live ? `Resync ${live} with ${origin}/${live}` : `Resync with ${origin}`;
   console.log(pc.bold(accent(title)));

@@ -5,7 +5,7 @@ import { git, gitTry } from './git.js';
 
 const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HOOK_SRC = join(PKG_ROOT, 'hooks', 'pre-push');
-const HOOK_MARKER = '# gitpace pre-push hook';
+const HOOK_MARKER = '# gites pre-push hook';
 
 export interface HookInstall {
   path: string;
@@ -43,7 +43,7 @@ export function installHook(): HookInstall {
   let backupPath: string | undefined;
   const replacedExisting = existsSync(target.path) && !isOurHook(target.path);
   if (replacedExisting) {
-    backupPath = `${target.path}.pre-gitpace`;
+    backupPath = `${target.path}.pre-gites`;
     if (!existsSync(backupPath)) {
       copyFileSync(target.path, backupPath);
     }

@@ -24,7 +24,7 @@ export function gitOk(...args: string[]): boolean {
 }
 
 function isVerbose(): boolean {
-  return Boolean(process.env.GITPACE_VERBOSE);
+  return Boolean(process.env.GITES_VERBOSE);
 }
 
 interface GitResult {

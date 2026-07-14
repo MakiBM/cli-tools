@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -27,14 +27,14 @@ test('workDivergedFromLive: false when work descends from live, true after a rew
   await withSandbox(() => {
     run('git', ['checkout', '-b', 'feat', 'main']);
     commitFile('live1.txt', '1\n', 'live: c1');
-    run('git', ['checkout', '-b', 'gitpace-feat']);
+    run('git', ['checkout', '-b', 'gites-feat']);
     commitFile('work1.txt', 'w\n', 'work: c1');
 
-    assert.equal(workDivergedFromLive('feat', 'gitpace-feat'), false);
+    assert.equal(workDivergedFromLive('feat', 'gites-feat'), false);
 
     // Rebase work off live's tip → live no longer in work's ancestry.
-    run('git', ['rebase', '--onto', 'main', 'feat', 'gitpace-feat']);
-    assert.equal(workDivergedFromLive('feat', 'gitpace-feat'), true);
+    run('git', ['rebase', '--onto', 'main', 'feat', 'gites-feat']);
+    assert.equal(workDivergedFromLive('feat', 'gites-feat'), true);
   });
 });
 
@@ -43,14 +43,14 @@ test('workDivergedFromLive: false when work descends from live, true after a rew
 test('shipCandidateShas: drops commits already on live by patch-id', async () => {
   await withSandbox(() => {
     run('git', ['checkout', '-b', 'feat', 'main']);
-    run('git', ['checkout', '-b', 'gitpace-feat']);
+    run('git', ['checkout', '-b', 'gites-feat']);
     const c1 = commitFile('a.txt', 'A\n', 'add a');
     commitFile('b.txt', 'B\n', 'add b');
 
     run('git', ['checkout', 'feat']);
     run('git', ['cherry-pick', c1]); // ship "add a" as a new SHA on live
 
-    const cands = shipCandidateShas('feat', 'gitpace-feat');
+    const cands = shipCandidateShas('feat', 'gites-feat');
     assert.equal(cands.length, 1, 'only the unshipped commit remains');
     assert.equal(run('git', ['log', '-1', '--format=%s', cands[0]!]).trim(), 'add b');
   });

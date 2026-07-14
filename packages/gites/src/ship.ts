@@ -4,7 +4,7 @@ import { spawnSync, type StdioOptions } from 'node:child_process';
 import { gitTry, gitRun, gitRunAllowFail, gitOk, branchExists } from './git.js';
 import { resolveLiveBranch, baseBranch } from './feature.js';
 import { workCutPoint, reparentWork } from './reparent.js';
-import { originRemote, gitpaceRemote } from './remotes.js';
+import { originRemote, gitesRemote } from './remotes.js';
 import { workBranch } from './feature.js';
 import { printArt } from './banner.js';
 import { accent } from './colors.js';
@@ -61,7 +61,7 @@ function parseStamp(s: string): Stamp | null {
   return { date: m[1]!, time: m[2]! };
 }
 
-// Once shipped, gitpace rebases `work` onto `live`, so `live` is normally an
+// Once shipped, gites rebases `work` onto `live`, so `live` is normally an
 // ancestor of `work`. If it isn't, `work` was rewritten (rebase/amend/fixup) after
 // a ship — its commits would cherry-pick against the wrong base and collide with
 // their already-shipped form.
@@ -98,7 +98,7 @@ export async function ship(): Promise<void> {
       console.log(`Conflict re-parenting '${work}' onto '${live}'. Resolve it, then:`);
       console.log('  git rebase --continue   # after fixing conflicts');
       console.log('  git rebase --abort      # to bail out');
-      console.log("  # then re-run 'gitpace ship'");
+      console.log("  # then re-run 'gites ship'");
       return;
     }
   }
@@ -318,7 +318,7 @@ export async function ship(): Promise<void> {
       break;
     }
     const env = { ...process.env, GIT_AUTHOR_DATE: stamp, GIT_COMMITTER_DATE: stamp };
-    const stdio: StdioOptions = process.env.GITPACE_VERBOSE ? 'inherit' : ['inherit', 'pipe', 'pipe'];
+    const stdio: StdioOptions = process.env.GITES_VERBOSE ? 'inherit' : ['inherit', 'pipe', 'pipe'];
     const r = spawnSync('git', ['commit', '-m', subjects[i]!], { stdio, env });
     if (r.status !== 0) {
       failed = true;
@@ -328,7 +328,7 @@ export async function ship(): Promise<void> {
 
   if (!failed) {
     const origin = originRemote();
-    const remote = gitpaceRemote();
+    const remote = gitesRemote();
     console.log('');
     // Fetch with --prune so the remote-tracking ref reflects reality: a plain fetch
     // leaves a stale ref when origin/<live> was deleted (merged PR, cleanup), and

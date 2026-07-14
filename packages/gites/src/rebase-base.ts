@@ -1,7 +1,7 @@
 import pc from 'picocolors';
 import { gitRun, gitRunAllowFail, gitTry, gitOk, branchExists } from './git.js';
 import { resolveLiveBranch, workBranch, baseBranch, setBaseBranch } from './feature.js';
-import { originRemote, gitpaceRemote } from './remotes.js';
+import { originRemote, gitesRemote } from './remotes.js';
 import { pickBranch } from './pick-branch.js';
 import { accent } from './colors.js';
 import { withSpinner } from './spinner.js';
@@ -14,7 +14,7 @@ export async function changeBase(): Promise<void> {
 
   const oldBase = baseBranch(live);
   const origin = originRemote();
-  const remote = gitpaceRemote();
+  const remote = gitesRemote();
 
   const newBase = await pickBranch({ message: `New base for '${live}':`, exclude: [live] });
   if (newBase === oldBase) {
@@ -61,7 +61,7 @@ export async function changeBase(): Promise<void> {
     console.log(`Rebase conflict re-parenting '${live}'. Resolve it, then:`);
     console.log('  git rebase --continue   # after fixing conflicts');
     console.log('  git rebase --abort      # to bail out');
-    console.log("  # then re-run 'gitpace change-base' if you aborted");
+    console.log("  # then re-run 'gites change-base' if you aborted");
     return;
   }
 

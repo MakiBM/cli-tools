@@ -1,12 +1,12 @@
 #!/bin/bash
-# gitpace pre-push hook
-# Blocks gitpace work branches (gitpace-*) from being pushed to the origin remote.
+# gites pre-push hook
+# Blocks gites work branches (gites-*) from being pushed to the origin remote.
 remote="$1"
-origin_remote=$(git config gitpace.origin 2>/dev/null || echo "origin")
+origin_remote=$(git config gites.origin 2>/dev/null || echo "origin")
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   branch="${local_ref##refs/heads/}"
-  if [[ "$remote" == "$origin_remote" && "$branch" == gitpace-* ]]; then
+  if [[ "$remote" == "$origin_remote" && "$branch" == gites-* ]]; then
     echo "BLOCKED: won't push '$branch' to client remote '$remote'"
     exit 1
   fi
