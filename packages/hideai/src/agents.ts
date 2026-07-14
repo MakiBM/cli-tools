@@ -85,3 +85,21 @@ export const AGENTS: readonly AgentDef[] = [
 export function getAgent(key: string): AgentDef | undefined {
   return AGENTS.find((a) => a.key === key);
 }
+
+/**
+ * Whether a commit message trips an agent's pattern. Mirrors the bash hook's
+ * `grep -iqE`: case-insensitive, line-based (^/$ per line, `.` excludes newline).
+ */
+export function matchesAgent(agent: AgentDef, message: string): boolean {
+  return new RegExp(agent.pattern, 'im').test(message);
+}
+
+/** All configured agents (by key) whose patterns match the message. */
+export function blockingAgents(message: string, keys: readonly string[]): AgentDef[] {
+  const out: AgentDef[] = [];
+  for (const key of keys) {
+    const agent = getAgent(key);
+    if (agent && matchesAgent(agent, message)) out.push(agent);
+  }
+  return out;
+}

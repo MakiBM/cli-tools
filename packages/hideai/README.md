@@ -6,7 +6,7 @@ Tiny git hook installer that blocks commit messages with AI assistant trailers
 ## Install
 
 ```
-npx hideai
+npx @makibm/hideai
 ```
 
 Interactive checkbox: pick which agents to block. Hook is written into the

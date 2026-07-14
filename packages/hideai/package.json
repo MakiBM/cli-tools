@@ -1,6 +1,6 @@
 {
-  "name": "hideai",
-  "version": "0.2.0",
+  "name": "@makibm/hideai",
+  "version": "1.0.0",
   "description": "Block commits with AI assistant trailers — Claude, Copilot, Cursor, ChatGPT and friends.",
   "type": "module",
   "bin": {
@@ -13,14 +13,23 @@
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MakiBM/makibm-tools.git",
+    "directory": "packages/hideai"
+  },
+  "author": "Bartek Makos",
+  "license": "MIT",
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/bin/hideai.js",
     "dev": "tsx bin/hideai.ts",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.2.0",
+    "@makibm/cli-kit": "workspace:^",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {

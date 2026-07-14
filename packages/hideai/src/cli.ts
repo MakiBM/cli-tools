@@ -1,19 +1,22 @@
-import { checkbox, confirm } from '@inquirer/prompts';
+import { checkbox, confirm, formatHelp, renderLogo } from '@makibm/cli-kit';
 import pc from 'picocolors';
 import { AGENTS } from './agents.js';
 import { installHook, uninstallHook, setBlockList, getBlockList } from './install.js';
 import { printBanner, printArt } from './banner.js';
 
-const HELP = `Usage: hideai [command]
-
-Commands:
-  (default)     Interactive setup — pick which AI agents to block in commit messages
-  install       Same as default
-  uninstall     Remove the hideai commit-msg hook and config
-  list          Show all known agents
-  status        Show which agents are currently blocked in this repo
-  help          Show this help
-`;
+const HELP = `${renderLogo('HIDEAI', {
+  subtitle: 'Block AI assistant trailers from your git commits.',
+})}\n\n${formatHelp({
+  usage: 'hideai [command]',
+  commands: [
+    { name: '(default)', summary: 'Interactive setup — pick which AI agents to block' },
+    { name: 'install', summary: 'Same as default' },
+    { name: 'uninstall', summary: 'Remove the hideai commit-msg hook and config' },
+    { name: 'list', summary: 'Show all known agents' },
+    { name: 'status', summary: 'Show which agents are currently blocked in this repo' },
+    { name: 'help', summary: 'Show this help' },
+  ],
+})}`;
 
 async function interactiveInstall(): Promise<void> {
   console.clear();

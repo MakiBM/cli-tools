@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { existsSync, mkdirSync, copyFileSync, chmodSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
 import pc from 'picocolors';
+import { formatBlockList, parseBlockList } from './blocklist.js';
 
 const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const HOOK_SRC = join(PKG_ROOT, 'hook', 'commit-msg');
@@ -77,13 +78,11 @@ export function setBlockList(keys: string[]): void {
     git('config', '--unset', 'hideai.block');
     return;
   }
-  git('config', 'hideai.block', keys.join(','));
+  git('config', 'hideai.block', formatBlockList(keys));
 }
 
 export function getBlockList(): string[] {
-  const v = gitTry('config', 'hideai.block');
-  if (!v) return [];
-  return v.split(',').map((s) => s.trim()).filter(Boolean);
+  return parseBlockList(gitTry('config', 'hideai.block'));
 }
 
 export function uninstallHook(): { removed: boolean; path: string } {
