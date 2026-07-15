@@ -3,10 +3,11 @@
 # Blocks gites work branches (gites-*) from being pushed to the origin remote.
 remote="$1"
 origin_remote=$(git config gites.origin 2>/dev/null || echo "origin")
+work_prefix=$(git config gites.workprefix 2>/dev/null || echo "gites-")
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   branch="${local_ref##refs/heads/}"
-  if [[ "$remote" == "$origin_remote" && "$branch" == gites-* ]]; then
+  if [[ "$remote" == "$origin_remote" && "$branch" == "$work_prefix"* ]]; then
     echo "BLOCKED: won't push '$branch' to client remote '$remote'"
     exit 1
   fi

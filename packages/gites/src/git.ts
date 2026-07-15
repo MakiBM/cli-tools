@@ -94,8 +94,28 @@ export function hasRemote(name: string): boolean {
   return remotes.includes(name);
 }
 
+export function remoteBranches(remote: string): Set<string> {
+  return new Set(
+    gitTry("ls-remote", "--heads", remote)
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => l.split("\t")[1]?.replace("refs/heads/", ""))
+      .filter(Boolean) as string[],
+  );
+}
+
 export function getConfig(key: string): string {
   return gitTry("config", key);
+}
+
+export function getConfigRegexp(pattern: string): Array<[string, string]> {
+  return gitTry("config", "--get-regexp", pattern)
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const sp = line.indexOf(" ");
+      return [line.slice(0, sp), line.slice(sp + 1)] as [string, string];
+    });
 }
 
 export function setConfig(key: string, value: string): void {

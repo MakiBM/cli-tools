@@ -1,7 +1,7 @@
 {
   "name": "@makibm/gites",
   "version": "1.0.0",
-  "description": "Two-track git workflow for batching and timing client commits",
+  "description": "Two-track git workflow for batching and timing commits",
   "license": "MIT",
   "author": "Bartek Makos",
   "repository": {

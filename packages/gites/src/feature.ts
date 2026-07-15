@@ -1,6 +1,14 @@
 import { gitTry, branchExists, currentBranch, getConfig, setConfig } from "./git.js";
 
-const WORK_PREFIX = "gites-";
+const DEFAULT_WORK_PREFIX = "gites-";
+
+export function workPrefix(): string {
+  return getConfig("gites.workprefix") || DEFAULT_WORK_PREFIX;
+}
+
+export function setWorkPrefix(prefix: string): void {
+  setConfig("gites.workprefix", prefix);
+}
 
 export function baseBranch(name: string): string {
   return getConfig(`branch.${name}.gitesbase`) || "main";
@@ -11,19 +19,25 @@ export function setBaseBranch(name: string, base: string): void {
 }
 
 export function workBranch(name: string): string {
-  return `${WORK_PREFIX}${name}`;
+  return `${workPrefix()}${name}`;
 }
 
 export function isWorkBranch(name: string): boolean {
-  return name.startsWith(WORK_PREFIX);
+  return name.startsWith(workPrefix());
 }
 
 export function stripWorkPrefix(name: string): string {
-  return name.slice(WORK_PREFIX.length);
+  return name.slice(workPrefix().length);
+}
+
+export function listWorkBranches(prefix: string = workPrefix()): string[] {
+  return gitTry("for-each-ref", "--format=%(refname:short)", `refs/heads/${prefix}*`)
+    .split("\n")
+    .filter(Boolean);
 }
 
 export function listFeatures(): string[] {
-  const refs = gitTry("for-each-ref", "--format=%(refname:short)", `refs/heads/${WORK_PREFIX}*`)
+  const refs = gitTry("for-each-ref", "--format=%(refname:short)", `refs/heads/${workPrefix()}*`)
     .split("\n")
     .filter(Boolean);
   const out: string[] = [];

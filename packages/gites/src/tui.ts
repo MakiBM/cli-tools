@@ -5,6 +5,9 @@ import { activeFeature, listFeatures, canAttach, workBranch, baseBranch } from "
 import { worktreeEnabled, worktreePath } from "./worktree.js";
 import { originRemote } from "./remotes.js";
 import { needsSetup, setupWizard } from "./setup.js";
+import { legacyConfigPresent, migrateLegacyConfig } from "./migrate.js";
+import { cleanup } from "./cleanup.js";
+import { settingsMenu } from "./settings.js";
 import { startFeature } from "./start-feature.js";
 import { attach } from "./attach.js";
 import { switchFeature } from "./switch.js";
@@ -60,10 +63,29 @@ async function attachWizard(): Promise<void> {
   await attach();
 }
 
-type MenuAction = "new" | "attach" | "switch" | "ship" | "resync" | "rebase" | "setup" | "quit";
+type MenuAction =
+  | "new"
+  | "attach"
+  | "switch"
+  | "ship"
+  | "resync"
+  | "rebase"
+  | "cleanup"
+  | "settings"
+  | "setup"
+  | "quit";
 
 export async function tui(): Promise<void> {
   if (!isGitRepo()) throw new Error("not inside a git repo.");
+
+  if (legacyConfigPresent()) {
+    console.clear();
+    printArt();
+    console.log(pc.yellow("Legacy gitpace config detected."));
+    console.log(pc.dim("  Adopt it under gites (keeps the 'gitpace-' prefix and remote for now)."));
+    const migrate = await confirm({ message: "Migrate gitpace config to gites?", default: true });
+    if (migrate) migrateLegacyConfig();
+  }
 
   if (needsSetup()) await setupWizard();
 
@@ -116,6 +138,8 @@ export async function tui(): Promise<void> {
     }
     if (choices.length > 0) choices.push(new Separator());
     choices.push({ name: "New feature", value: "new" });
+    choices.push({ name: "Clean up finished features", value: "cleanup" });
+    choices.push({ name: "Settings", value: "settings" });
     choices.push({ name: "Re-run setup", value: "setup" });
     choices.push({ name: "Quit", value: "quit" });
 
@@ -146,6 +170,13 @@ export async function tui(): Promise<void> {
         case "rebase":
           await changeBase();
           await pressAnyKey();
+          break;
+        case "cleanup":
+          await cleanup();
+          await pressAnyKey();
+          break;
+        case "settings":
+          await settingsMenu();
           break;
         case "setup":
           await setupWizard();

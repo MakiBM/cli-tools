@@ -4,6 +4,7 @@ import pc from "picocolors";
 import { git, gitTry, hasRemote, isGitRepo } from "./git.js";
 import { originRemote, gitesRemote } from "./remotes.js";
 import { worktreeEnabled } from "./worktree.js";
+import { workPrefix, setWorkPrefix } from "./feature.js";
 import { printBanner } from "./banner.js";
 import { installHook, isHookInstalled } from "./hook-install.js";
 
@@ -31,17 +32,19 @@ export interface SetupOptions {
   originName?: string;
   remoteName?: string;
   worktree?: boolean;
+  workPrefix?: string;
 }
 
 export function runSetup(
   remoteUrl: string,
-  { originName = "origin", remoteName = "gites", worktree }: SetupOptions = {},
+  { originName = "origin", remoteName = "gites", worktree, workPrefix: prefix }: SetupOptions = {},
 ): void {
   if (!isGitRepo()) throw new Error("not inside a git repo");
 
   if (originName !== "origin") git("config", "gites.origin", originName);
   if (remoteName !== "gites") git("config", "gites.remote", remoteName);
   if (worktree !== undefined) git("config", "gites.worktree", String(worktree));
+  if (prefix) setWorkPrefix(prefix);
 
   if (remoteUrl) {
     if (!hasRemote(remoteName)) {
@@ -136,6 +139,15 @@ export async function setupWizard(): Promise<void> {
     default: worktreeEnabled(),
   });
   git("config", "gites.worktree", String(worktree));
+
+  console.log("");
+  console.log(pc.bold("Work-branch prefix"));
+  console.log(pc.dim("  Prefix for the local work branches gites creates per feature."));
+  const prefix = await input({
+    message: "Work-branch prefix:",
+    default: workPrefix(),
+  });
+  if (prefix && prefix !== workPrefix()) setWorkPrefix(prefix);
 
   console.log("");
   console.log(pc.bold("Git hook"));

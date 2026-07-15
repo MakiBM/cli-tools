@@ -10,6 +10,8 @@ Commands:
   change-base           Re-parent the active feature onto a new base branch (PR chains)
   ship                  Cherry-pick commits to the live branch with custom timestamps
   resync                Pull origin and rebase working branches
+  cleanup               Prune finished features (local + backup only, never origin)
+  config                Change settings (branch prefix, worktrees, backup remote)
   setup                 Re-run first-time setup
   help                  Show this help
 
@@ -82,6 +84,14 @@ export async function run(args: string[]): Promise<void> {
     case "resync": {
       const { resync } = await import("./resync.js");
       return resync();
+    }
+    case "cleanup": {
+      const { cleanup } = await import("./cleanup.js");
+      return cleanup();
+    }
+    case "config": {
+      const { settingsMenu } = await import("./settings.js");
+      return settingsMenu();
     }
     case "setup": {
       const { setupWizard } = await import("./setup.js");

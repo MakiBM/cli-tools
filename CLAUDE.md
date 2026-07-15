@@ -57,8 +57,10 @@ Filter one package: `pnpm --filter @makibm/twixer <script>`.
 
 ## Runtime identifiers (don't confuse tools)
 
-- gites: git config `gites.*`, branch prefix `gites-<name>`, env `GITES_VERBOSE`,
-  hook marker `# gites pre-push hook`, backup `.pre-gites`.
+- gites: git config `gites.*` (prefix in `gites.workprefix`, default `gites-`),
+  branch prefix `gites-<name>`, env `GITES_VERBOSE`, hook marker
+  `# gites pre-push hook`, backup `.pre-gites`. Legacy `gitpace.*` config +
+  `gitpace-` prefix is auto-detected and migrated to the `gites.*` namespace.
 - hideai: git config `hideai.block` (CSV), hook marker `hideai commit-msg hook`.
 
 ## Releasing

@@ -1,9 +1,9 @@
 # gites
 
-Two-track git workflow for batching and timing client commits.
+Two-track git workflow for batching and timing commits.
 
 Batch your work session on a private branch backed up to your own remote.
-Ship commits to the client branch with hand-picked timestamps, one chunk at
+Ship commits to the live branch with hand-picked timestamps, one chunk at
 a time.
 
 ## Install
@@ -37,6 +37,8 @@ gites switch                   # Switch between features (prints the path for wo
 gites change-base              # Re-parent the active feature onto a new base (PR chains)
 gites ship                     # Cherry-pick commits with custom timestamps
 gites resync                   # Pull origin and rebase working branches
+gites cleanup                  # Prune finished features (local + backup only)
+gites config                   # Change settings (prefix, worktrees, backup remote)
 gites setup                    # Re-run first-time setup
 gites help                     # Show help
 ```
@@ -52,11 +54,44 @@ have several checked out at once. `switch` prints the folder to `cd` into rather
 than moving your current checkout. Run `git config gites.worktree true` (or the
 setup wizard toggle) to make worktrees the default for new features.
 
+## Work-branch prefix
+
+Work branches default to `gites-<name>`. To use a different prefix in a repo
+(e.g. you already have branches under another convention), set it per repo:
+
+```bash
+git config gites.workprefix wip-      # work branches become wip-<name>
+```
+
+The setup wizard and `gites config` also prompt for it. The value is read at
+runtime, so it also drives feature discovery and the pre-push block. Changing it
+via `gites config` offers to rename existing work branches (local + backup
+remote, never origin) to the new prefix.
+
+## Cleanup
+
+`gites cleanup` prunes features whose PR is closed and whose branch is gone from
+origin. For each finished feature it removes the local live branch, the local
+work branch, the work branch on the backup remote, and its worktree. **Origin is
+never touched.** Detection uses `gh` (`gh pr list --state closed`), so the `gh`
+CLI must be installed and authenticated.
+
+- You confirm before anything is deleted and can opt out of branches to keep.
+- Anything with uncommitted changes (or a checked-out branch) is not
+  auto-deleted; cleanup prints a copy-paste command to remove it manually.
+
+## Legacy gitpace repos
+
+Repos set up with the older `gitpace` naming are detected on startup and can be
+adopted under gites in one step (mapping `gitpace.*` config to `gites.*`, keeping
+the `gitpace-` prefix and `gitpace` remote). Later, rename the prefix to `gites-`
+from `gites config` once the old branches are cleaned up.
+
 ## The workflow
 
 - **`gites-<name>`** - your working branch. Pushed only to your private
-  `gites` remote. Never reaches the client.
-- **`<name>`** - the client-facing branch. Created locally at
+  `gites` remote. Never reaches origin.
+- **`<name>`** - the live branch. Created locally at
   `start-feature` and **not pushed to origin until your first `ship`**, so
   branching a chain off a not-yet-published base leaks nothing. Commits arrive
   one ship at a time via the TUI, each with a custom timestamp.
@@ -144,7 +179,7 @@ None of this touches origin or anyone else who pulls from it.
 
 - **The hook is per-clone.** Re-run setup after cloning on a new machine (the
   TUI detects this automatically).
-- **Don't rebase the origin branch after the client has reviewed it.** Use
+- **Don't rebase the origin branch after it has been reviewed.** Use
   `git merge main` instead.
 - **The `pre-push` hook is your safety net** - blocks `gites-*` branches
   from reaching `origin`.
