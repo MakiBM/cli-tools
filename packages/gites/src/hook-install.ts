@@ -29,8 +29,11 @@ function hookTargetPath(): { path: string; underHooksPath: boolean } {
   if (hooksPath) {
     return { path: join(hooksPath, "pre-push"), underHooksPath: true };
   }
-  const gitDir = git("rev-parse", "--git-dir");
-  return { path: join(gitDir, "hooks", "pre-push"), underHooksPath: false };
+  // Use the common dir, not --git-dir: in a linked worktree --git-dir is the
+  // per-worktree dir (.git/worktrees/<name>), but git runs hooks from the shared
+  // .git/hooks. Resolving there keeps hook detection stable across worktrees.
+  const commonDir = git("rev-parse", "--path-format=absolute", "--git-common-dir");
+  return { path: join(commonDir, "hooks", "pre-push"), underHooksPath: false };
 }
 
 function isOurHook(path: string): boolean {
