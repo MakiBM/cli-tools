@@ -26,6 +26,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Leaf packages import @makibm/cli-kit's built dist, so build before tests.
+      - run: pnpm build
+
       # gites' git-sandbox tests need a git identity on CI.
       - name: Configure git identity
         run: |
