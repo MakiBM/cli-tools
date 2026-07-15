@@ -3,9 +3,19 @@ import { dirname, join } from "node:path";
 import { existsSync, mkdirSync, copyFileSync, chmodSync, readFileSync } from "node:fs";
 import { git, gitTry } from "./git.js";
 
-const PKG_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const HOOK_SRC = join(PKG_ROOT, "hooks", "pre-push");
 const HOOK_MARKER = "# gites pre-push hook";
+
+// `hooks/pre-push` ships at the package root (files: ["dist","hooks"]). The
+// compiled module sits at dist/src/, so root is two levels up; from TS source
+// it is one level up. Resolve against whichever exists.
+function hookSrc(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+  for (const up of ["..", join("..", "..")]) {
+    const candidate = join(here, up, "hooks", "pre-push");
+    if (existsSync(candidate)) return candidate;
+  }
+  throw new Error("gites: bundled pre-push hook not found");
+}
 
 export interface HookInstall {
   path: string;
@@ -49,7 +59,7 @@ export function installHook(): HookInstall {
     }
   }
 
-  copyFileSync(HOOK_SRC, target.path);
+  copyFileSync(hookSrc(), target.path);
   chmodSync(target.path, 0o755);
   return {
     path: target.path,
