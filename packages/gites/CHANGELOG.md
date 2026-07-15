@@ -1,5 +1,13 @@
 # @makibm/gites
 
+## 1.1.2
+
+### Patch Changes
+
+- 75fba14: Fix first-time setup wrongly triggering inside a linked worktree: hook detection
+  used `--git-dir` (the per-worktree dir) instead of the shared common dir where
+  git actually runs hooks, so `gites` treated an already-set-up repo as new.
+
 ## 1.1.1
 
 ### Patch Changes
