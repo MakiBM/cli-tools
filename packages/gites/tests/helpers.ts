@@ -25,13 +25,14 @@ export function setupSandbox(): SandboxContext {
   const remote = join(sandbox, "gites.git");
   const work = join(sandbox, "work");
 
-  run("git", ["init", "--bare", origin]);
-  run("git", ["init", "--bare", remote]);
+  run("git", ["init", "--bare", "-b", "main", origin]);
+  run("git", ["init", "--bare", "-b", "main", remote]);
   run("git", ["clone", "--origin", TEST_ORIGIN, origin, work]);
 
   const prev = process.cwd();
   process.chdir(work);
   try {
+    run("git", ["checkout", "-B", "main"]);
     run("git", ["config", "user.email", "test@test.com"]);
     run("git", ["config", "user.name", "Test"]);
     run("git", ["config", "gites.origin", TEST_ORIGIN]);
