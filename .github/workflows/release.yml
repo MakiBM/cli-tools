@@ -9,6 +9,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write
   pull-requests: write
+  id-token: write # npm Trusted Publishing (OIDC)
 
 jobs:
   release:
@@ -20,9 +21,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       - run: pnpm install --frozen-lockfile
 
@@ -39,6 +39,7 @@ jobs:
 
       # Opens/updates a "Version Packages" PR when changesets exist; when that PR
       # is merged (versions bumped), this same step publishes to npm instead.
+      # Publish auth is npm Trusted Publishing (OIDC) via id-token, no NPM_TOKEN.
       - name: Create release PR or publish
         uses: changesets/action@v1
         with:
@@ -48,5 +49,3 @@ jobs:
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
