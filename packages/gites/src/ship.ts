@@ -10,19 +10,17 @@ import { printArt } from "./banner.js";
 import { accent } from "./colors.js";
 import { withSpinner } from "./spinner.js";
 import {
-  genSchedule,
+  distribute,
   validateSchedule,
-  buildDayWindows,
-  dayCapacity,
+  canvasLength,
   localDate,
   minutesOf,
   type DayWindow,
 } from "./time-distribution.js";
 import { editSchedule } from "./schedule-editor.js";
 
-const MIN_GAP_MIN = 20;
-const WORK_START_MIN = 10 * 60; // 10:00
-const WORK_END_MIN = 16 * 60 + 30; // 16:30
+const DAY_START_MIN = 8 * 60; // 08:00 - soft start for days without the first commit
+const DAY_END_MIN = 18 * 60; // 18:00 - end of a full working day
 
 function fmt(t: number): string {
   return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
@@ -48,6 +46,38 @@ function eachDate(startDT: Date, endDT: Date): string[] {
     cursor.setDate(cursor.getDate() + 1);
   }
   return out;
+}
+
+// Lines changed (insertions + deletions) for a commit - the weight used to size its
+// slice of the timeline. Binary/rename lines show as '-' and count as 0.
+function commitSize(sha: string): number {
+  let total = 0;
+  for (const line of gitTry("show", "--numstat", "--format=", sha).split("\n")) {
+    const m = /^(\d+)\t(\d+)\t/.exec(line);
+    if (m) total += parseInt(m[1]!, 10) + parseInt(m[2]!, 10);
+  }
+  return total;
+}
+
+// The session canvas as day windows (overnight gaps dropped by the distributor):
+// - first day starts at the first commit's exact time (kept even if past 18:00),
+// - the last day (today) ends at `now`, all other days end at 18:00,
+// - days without the first commit start at a jittered ~08:00.
+function buildCanvas(startDT: Date, endDT: Date, offDates: ReadonlySet<string>): DayWindow[] {
+  const startDate = localDate(startDT);
+  const endDate = localDate(endDT);
+  const softStart = DAY_START_MIN + Math.floor(Math.random() * 25); // ~08:00, natural
+  const windows: DayWindow[] = [];
+  for (const date of eachDate(startDT, endDT)) {
+    if (offDates.has(date)) continue;
+    const isFirst = date === startDate;
+    const isLast = date === endDate;
+    const startMin = isFirst ? minutesOf(startDT) : softStart;
+    let endMin = isLast ? minutesOf(endDT) : DAY_END_MIN;
+    if (isFirst && !isLast && startMin > endMin) endMin = startMin; // late first commit stays put
+    if (startMin <= endMin) windows.push({ date, startMin, endMin });
+  }
+  return windows;
 }
 
 // Once shipped, gites rebases `work` onto `live`, so `live` is normally an
@@ -159,9 +189,10 @@ export async function ship(): Promise<void> {
   const startISO = liveHasNew
     ? gitTry("log", "-1", "--format=%cI", live)
     : gitTry("log", "-1", "--format=%aI", allShas[0]!);
-  const startDT = startISO ? new Date(startISO) : todayAt(WORK_START_MIN);
+  const startDT = startISO ? new Date(startISO) : todayAt(DAY_START_MIN);
   const endDT = new Date();
 
+  const sizes = shas.map(commitSize);
   const candidateDates = eachDate(startDT, endDT);
 
   // --- session window screen ----------------------------------------------
@@ -170,9 +201,7 @@ export async function ship(): Promise<void> {
     printArt();
     console.log(pc.bold(accent("Session window")));
     console.log(
-      pc.dim(
-        `Working hours ${fmt(WORK_START_MIN)}–${fmt(WORK_END_MIN)}, times ≥${MIN_GAP_MIN}m apart.`,
-      ),
+      pc.dim(`Working hours up to ${fmt(DAY_END_MIN)}; commits spread by size across the window.`),
     );
     console.log("");
     console.log(`  Start:   ${pc.cyan(`${localDate(startDT)} ${fmt(minutesOf(startDT))}`)}`);
@@ -210,22 +239,23 @@ export async function ship(): Promise<void> {
     offDates = new Set(candidateDates.filter((d) => !kept.includes(d)));
   }
 
-  let days: DayWindow[] = buildDayWindows(startDT, endDT, offDates, WORK_START_MIN, WORK_END_MIN);
-  if (days.length === 0) {
-    if (candidateDates.length > 1 && offDates.size === candidateDates.length) {
-      console.log(pc.red("All days are off - nothing to ship."));
-      return;
-    }
-    days = [{ date: localDate(new Date()), startMin: WORK_START_MIN, endMin: WORK_START_MIN }];
+  if (candidateDates.length > 1 && offDates.size === candidateDates.length) {
+    console.log(pc.red("All days are off - nothing to ship."));
+    return;
   }
 
-  const capacity = days.reduce((sum, d) => sum + dayCapacity(d, MIN_GAP_MIN), 0);
-  const overflowMsg =
-    count > capacity
-      ? `Warning: ${count} commits exceed the ${capacity}-slot capacity of the selected days. Spilling ${count - capacity} past ${fmt(days[days.length - 1]!.endMin)} on the last day.`
-      : "";
+  let days = buildCanvas(startDT, endDT, offDates);
+  if (days.length === 0) {
+    days = [{ date: localDate(endDT), startMin: minutesOf(endDT), endMin: minutesOf(endDT) }];
+  }
+  // Guarantee enough room for distinct minute stamps; if the canvas is tighter than
+  // the commit count, nudge the first day's start back (never past midnight).
+  const deficit = count - 1 - canvasLength(days);
+  if (deficit > 0) {
+    days[0] = { ...days[0]!, startMin: Math.max(0, days[0]!.startMin - deficit) };
+  }
 
-  const initial = genSchedule(count, days, MIN_GAP_MIN);
+  const initial = distribute(sizes, days);
 
   // --- time editing TUI ----------------------------------------------------
   console.clear();
@@ -233,10 +263,10 @@ export async function ship(): Promise<void> {
   const result = await editSchedule({
     title: `Ship ${count} commit(s) to '${live}'`,
     subtitle: `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} - ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
-    overflow: overflowMsg || undefined,
     rows: shas.map((sha, i) => ({ sha, subject: subjects[i]! })),
     schedule: initial,
-    regenerate: () => genSchedule(count, days, MIN_GAP_MIN),
+    days,
+    regenerate: () => distribute(sizes, days),
     validate: validateSchedule,
   });
 
@@ -270,7 +300,9 @@ export async function ship(): Promise<void> {
   let failed = false;
   for (let i = 0; i < count; i++) {
     const sha = shas[i]!;
-    const stamp = `${schedule[i]!.date}T${schedule[i]!.time}:00`;
+    // Natural seconds (never :00) so stamps don't look machine-generated.
+    const sec = String(1 + Math.floor(Math.random() * 59)).padStart(2, "0");
+    const stamp = `${schedule[i]!.date}T${schedule[i]!.time}:${sec}`;
     const cpOk = await withSpinner(`Cherry-picking ${sha.slice(0, 8)} as ${stamp}`, () =>
       gitRunAllowFail("cherry-pick", "--no-commit", sha),
     );

@@ -12,26 +12,6 @@ export function isValidHHMM(s: string): boolean {
   return /^\d{1,2}:\d{2}$/.test(s);
 }
 
-export function validateTimes(times: readonly string[]): boolean {
-  let prev = -1;
-  for (const t of times) {
-    if (!isValidHHMM(t)) return false;
-    const cur = parseHHMM(t);
-    if (cur === null || cur <= prev) return false;
-    prev = cur;
-  }
-  return true;
-}
-
-function pickDistinct(poolSize: number, count: number): number[] {
-  const pool = Array.from({ length: poolSize }, (_, i) => i);
-  for (let i = 0; i < count; i++) {
-    const j = i + Math.floor(Math.random() * (pool.length - i));
-    [pool[i], pool[j]] = [pool[j]!, pool[i]!];
-  }
-  return pool.slice(0, count).sort((a, b) => a - b);
-}
-
 export interface DayWindow {
   date: string; // 'YYYY-MM-DD'
   startMin: number; // inclusive; invariant startMin <= endMin
@@ -51,83 +31,81 @@ export function minutesOf(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
 
-function addDays(d: Date, n: number): Date {
-  const c = new Date(d);
-  c.setDate(c.getDate() + n);
-  return c;
+// The canvas is the ordered day windows with the overnight gaps removed: a single
+// contiguous minute axis [0, canvasLength]. Positions map onto real day/time via
+// posToStamp, so distribution and editing ignore the non-working hours between days.
+export function canvasLength(days: readonly DayWindow[]): number {
+  return days.reduce((sum, d) => sum + (d.endMin - d.startMin), 0);
 }
 
-export function buildDayWindows(
-  startDT: Date,
-  endDT: Date,
-  offDates: ReadonlySet<string>,
-  workStartMin: number,
-  workEndMin: number,
-): DayWindow[] {
-  const startDate = localDate(startDT);
-  const endDate = localDate(endDT);
-  const windows: DayWindow[] = [];
-  let cursor = new Date(startDT.getFullYear(), startDT.getMonth(), startDT.getDate());
-  const last = new Date(endDT.getFullYear(), endDT.getMonth(), endDT.getDate());
-  while (cursor.getTime() <= last.getTime()) {
-    const date = localDate(cursor);
-    if (!offDates.has(date)) {
-      const dayStart =
-        date === startDate ? Math.max(workStartMin, minutesOf(startDT)) : workStartMin;
-      const dayEnd = date === endDate ? Math.min(minutesOf(endDT), workEndMin) : workEndMin;
-      if (dayStart <= dayEnd) windows.push({ date, startMin: dayStart, endMin: dayEnd });
-    }
-    cursor = addDays(cursor, 1);
+export function posToStamp(pos: number, days: readonly DayWindow[]): Stamp {
+  let p = Math.max(0, Math.min(pos, canvasLength(days)));
+  for (const d of days) {
+    const len = d.endMin - d.startMin;
+    if (p <= len) return { date: d.date, time: fmt(d.startMin + Math.round(p)) };
+    p -= len;
   }
-  return windows;
+  const last = days[days.length - 1]!;
+  return { date: last.date, time: fmt(last.endMin) };
 }
 
-export function dayCapacity(w: DayWindow, gap: number): number {
-  return Math.floor((w.endMin - w.startMin) / gap) + 1;
+export function stampToPos(stamp: Stamp, days: readonly DayWindow[]): number {
+  let acc = 0;
+  for (const d of days) {
+    const len = d.endMin - d.startMin;
+    if (stamp.date === d.date) {
+      const m = parseHHMM(stamp.time) ?? d.startMin;
+      return acc + Math.max(0, Math.min(len, m - d.startMin));
+    }
+    acc += len;
+  }
+  return acc;
 }
 
-export function genSchedule(count: number, days: readonly DayWindow[], gap: number): Stamp[] {
-  if (days.length === 0 || count === 0) return [];
-  const n = days.length;
-  const spans = days.map((d) => Math.max(0, d.endMin - d.startMin));
-  const total = spans.reduce((a, b) => a + b, 0);
+// Place `sizes.length` commits (chronological order) across the canvas. The first
+// commit lands at the canvas start (its real time), the newest at the canvas end
+// (now). The gap before each later commit is 80% proportional to that commit's size
+// (lines changed) and 20% random, so bigger commits get more time before them.
+// Stamps stay strictly increasing, distinct, and inside the canvas. `rand` is
+// injectable for deterministic tests.
+export function distribute(
+  sizes: readonly number[],
+  days: readonly DayWindow[],
+  rand: () => number = Math.random,
+): Stamp[] {
+  const n = sizes.length;
+  if (n === 0 || days.length === 0) return [];
+  const canvas = canvasLength(days);
+  if (n === 1) return [posToStamp(canvas, days)];
 
-  const alloc: number[] = Array.from({ length: n }, () => 0);
-  if (total === 0) {
-    alloc[n - 1] = count;
-  } else {
-    const raw = spans.map((s) => (count * s) / total);
-    let assigned = 0;
-    for (let i = 0; i < n; i++) {
-      alloc[i] = Math.floor(raw[i]!);
-      assigned += alloc[i]!;
-    }
-    let leftover = count - assigned;
-    const order = raw
-      .map((r, i) => ({ i, frac: r - Math.floor(r) }))
-      .sort((a, b) => b.frac - a.frac || a.i - b.i);
-    for (let k = 0; leftover > 0; k = (k + 1) % n, leftover--) {
-      alloc[order[k]!.i]! += 1;
+  const SIZE_WEIGHT = 0.8;
+  const gapSizes = sizes.slice(1).map((s) => Math.max(1, s)); // size of each later commit
+  const totalSize = gapSizes.reduce((a, b) => a + b, 0);
+  const r = gapSizes.map(() => rand() + 1e-6);
+  const totalR = r.reduce((a, b) => a + b, 0);
+  const weights = gapSizes.map(
+    (s, i) => SIZE_WEIGHT * (s / totalSize) + (1 - SIZE_WEIGHT) * (r[i]! / totalR),
+  );
+
+  const pos = [0];
+  let cum = 0;
+  for (const w of weights) {
+    cum += w;
+    pos.push(Math.round(cum * canvas));
+  }
+
+  // Keep strictly increasing and distinct at minute resolution, clamped to canvas.
+  for (let i = 1; i < n; i++) {
+    if (pos[i]! <= pos[i - 1]!) pos[i] = pos[i - 1]! + 1;
+  }
+  if (pos[n - 1]! > canvas) {
+    pos[n - 1] = canvas;
+    for (let i = n - 2; i >= 0; i--) {
+      if (pos[i]! >= pos[i + 1]!) pos[i] = pos[i + 1]! - 1;
     }
   }
 
-  // Cap non-final days at capacity and spill overflow forward; final day absorbs
-  // the rest so genTimes spills past the window exactly as the single-day case.
-  for (let i = 0; i < n - 1; i++) {
-    const cap = dayCapacity(days[i]!, gap);
-    if (alloc[i]! > cap) {
-      alloc[i + 1]! += alloc[i]! - cap;
-      alloc[i] = cap;
-    }
-  }
-
-  const schedule: Stamp[] = [];
-  for (let i = 0; i < n; i++) {
-    if (alloc[i]! <= 0) continue;
-    const times = genTimes(alloc[i]!, days[i]!.startMin, days[i]!.endMin, gap);
-    for (const time of times) schedule.push({ date: days[i]!.date, time });
-  }
-  return schedule;
+  return pos.map((p) => posToStamp(Math.max(0, p), days));
 }
 
 export function validateSchedule(schedule: readonly Stamp[]): boolean {
@@ -141,25 +119,4 @@ export function validateSchedule(schedule: readonly Stamp[]): boolean {
     prev = key;
   }
   return true;
-}
-
-export function genTimes(count: number, startMin: number, endMin: number, gap: number): string[] {
-  if (count === 1) {
-    const t = startMin + Math.floor(Math.random() * (endMin - startMin + 1));
-    return [fmt(t)];
-  }
-  const window = endMin - startMin;
-  const needed = (count - 1) * gap;
-  let times: number[];
-  if (needed >= window) {
-    times = Array.from({ length: count }, (_, i) => startMin + i * gap);
-  } else {
-    const slack = window - needed;
-    const cuts = pickDistinct(slack + count, count);
-    times = cuts.map((c, i) => startMin + c + i * gap - i);
-    for (let i = 1; i < times.length; i++) {
-      if (times[i]! < times[i - 1]! + gap) times[i] = times[i - 1]! + gap;
-    }
-  }
-  return times.map(fmt);
 }

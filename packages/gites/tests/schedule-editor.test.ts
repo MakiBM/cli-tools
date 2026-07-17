@@ -9,12 +9,18 @@ const rows = [
   { sha: "bbbbbbbb22", subject: "second" },
 ];
 
+const days = [
+  { date: "2026-07-14", startMin: 480, endMin: 1080 },
+  { date: "2026-07-15", startMin: 480, endMin: 1080 },
+];
+
 function baseConfig(schedule: Stamp[]) {
   return {
     title: "Ship 2 commit(s)",
     subtitle: "Session",
     rows,
     schedule,
+    days,
     regenerate: () => schedule,
     validate: validateSchedule,
   };
