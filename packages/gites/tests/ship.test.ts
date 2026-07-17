@@ -55,3 +55,27 @@ test("shipCandidateShas: drops commits already on live by patch-id", async () =>
     assert.equal(run("git", ["log", "-1", "--format=%s", cands[0]!]).trim(), "add b");
   });
 });
+
+// A stray `git merge <base>` into work pulls the base's own commits and a merge
+// commit into `feat...work`. With the base upstream excluded they must not ship.
+test("shipCandidateShas: excludes base-upstream commits and merges pulled in by a merge", async () => {
+  await withSandbox(() => {
+    run("git", ["checkout", "-b", "feat", "main"]);
+    run("git", ["checkout", "-b", "gites-feat"]);
+    commitFile("w.txt", "W\n", "work: only mine");
+
+    // Base advances, then is merged into work (the mistake this guards against).
+    run("git", ["checkout", "main"]);
+    commitFile("base.txt", "M\n", "base: advanced");
+    run("git", ["checkout", "gites-feat"]);
+    run("git", ["merge", "--no-edit", "main"]);
+
+    // Without the exclusion the base commit + merge leak into the ship range.
+    assert.ok(shipCandidateShas("feat", "gites-feat").length > 1);
+
+    // With the base upstream excluded, only the genuinely-new work commit ships.
+    const cands = shipCandidateShas("feat", "gites-feat", "main");
+    assert.equal(cands.length, 1);
+    assert.equal(run("git", ["log", "-1", "--format=%s", cands[0]!]).trim(), "work: only mine");
+  });
+});

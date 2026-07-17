@@ -90,14 +90,22 @@ export function workDivergedFromLive(live: string, work: string): boolean {
 
 // Commits to ship: `--cherry-pick --right-only` drops any whose patch-id is already
 // on `live` (e.g. re-listed after a reparent), leaving only genuinely new work.
-export function shipCandidateShas(live: string, work: string): string[] {
+// `baseUpstream` (e.g. origin/main), when given, is excluded too: commits that
+// entered `work` via a plain `git merge <base>` are already on the base and would
+// cherry-pick as stale diffs against the wrong context. `--no-merges` also drops
+// the merge commit itself, which is uncherry-pickable without `-m`.
+export function shipCandidateShas(live: string, work: string, baseUpstream?: string): string[] {
+  const exclude =
+    baseUpstream && gitOk("rev-parse", "--verify", baseUpstream) ? [`^${baseUpstream}`] : [];
   return gitTry(
     "log",
     "--reverse",
     "--format=%H",
+    "--no-merges",
     "--cherry-pick",
     "--right-only",
     `${live}...${work}`,
+    ...exclude,
   )
     .split("\n")
     .filter(Boolean);
@@ -141,7 +149,7 @@ export async function ship(): Promise<void> {
     return;
   }
 
-  const allShas = shipCandidateShas(live, work);
+  const allShas = shipCandidateShas(live, work, `${originRemote()}/${baseBranch(live)}`);
 
   if (allShas.length === 0) {
     console.log("No new commits to ship.");
@@ -296,6 +304,12 @@ export async function ship(): Promise<void> {
   }
 
   await gitRun("checkout", live);
+  // Snapshot live's tip so a mid-loop failure rolls back cleanly. A
+  // `cherry-pick --no-commit` conflict leaves no sequencer state, so
+  // `cherry-pick --abort` is a no-op ("no cherry-pick in progress") that neither
+  // clears the index nor undoes commits already made this ship. Hard-resetting to
+  // this snapshot is what makes "'live' is unchanged" actually true.
+  const preShip = gitTry("rev-parse", "HEAD");
 
   let failed = false;
   for (let i = 0; i < count; i++) {
@@ -307,9 +321,6 @@ export async function ship(): Promise<void> {
       gitRunAllowFail("cherry-pick", "--no-commit", sha),
     );
     if (!cpOk) {
-      // Self-heal: abort the half-applied pick so the index is clean and the
-      // checkout back to `work` below can succeed (an unmerged index blocks it).
-      await gitRunAllowFail("cherry-pick", "--abort");
       console.log("");
       console.log(
         `Cherry-pick conflict on ${sha.slice(0, 8)} - reverted this ship, '${live}' is unchanged.`,
@@ -352,6 +363,10 @@ export async function ship(): Promise<void> {
 
     console.log(pc.bold(pc.green(`Done. Shipped ${count} commit(s).`)));
   } else {
+    // Roll back any commits made this ship and clear the half-applied index, so
+    // `live` really is unchanged and the checkout back to `work` isn't blocked by
+    // an unmerged index.
+    await gitRunAllowFail("reset", "--hard", preShip);
     await gitRunAllowFail("checkout", work);
   }
 }
