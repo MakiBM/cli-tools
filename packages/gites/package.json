@@ -27,11 +27,13 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "@inquirer/core": "^10.3.2",
     "@inquirer/prompts": "^7.2.0",
     "@makibm/cli-kit": "workspace:^",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
+    "@inquirer/testing": "^2.1.53",
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"

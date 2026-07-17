@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readdirSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { git, gitTry, gitRun, getConfig } from "./git.js";
 import { workBranch } from "./feature.js";
@@ -52,12 +52,36 @@ export function branchCheckedOutElsewhere(branch: string): boolean {
   return listWorktrees().some((w) => w.branch === branch && w.path !== process.cwd());
 }
 
-function copyLocalArtifacts(from: string, to: string): void {
-  for (const entry of readdirSync(from)) {
-    if (entry === ".claude" || entry.startsWith(".env")) {
-      const src = join(from, entry);
-      if (existsSync(src)) cpSync(src, join(to, entry), { recursive: true });
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", ".turbo", ".cache"]);
+
+function isArtifact(name: string): boolean {
+  return name === ".claude" || name.startsWith(".env");
+}
+
+// Collect artifact paths (relative to `from`) at any depth: top-level `.claude`
+// plus `.env*` files nested in workspaces like `apps/shell/.env.local`.
+function collectArtifacts(from: string, base: string, out: string[]): void {
+  for (const entry of readdirSync(from, { withFileTypes: true })) {
+    const rel = base ? join(base, entry.name) : entry.name;
+    if (isArtifact(entry.name)) {
+      out.push(rel);
+      continue;
     }
+    if (entry.isDirectory() && !SKIP_DIRS.has(entry.name)) {
+      collectArtifacts(join(from, entry.name), rel, out);
+    }
+  }
+}
+
+export function copyLocalArtifacts(from: string, to: string): void {
+  const rels: string[] = [];
+  collectArtifacts(from, "", rels);
+  for (const rel of rels) {
+    const src = join(from, rel);
+    if (!existsSync(src)) continue;
+    const dst = join(to, rel);
+    mkdirSync(dirname(dst), { recursive: true });
+    cpSync(src, dst, { recursive: true });
   }
 }
 
