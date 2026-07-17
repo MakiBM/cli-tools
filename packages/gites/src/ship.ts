@@ -1,4 +1,4 @@
-import { select, input, confirm, checkbox, Separator } from "@inquirer/prompts";
+import { select, confirm, checkbox, Separator } from "@inquirer/prompts";
 import pc from "picocolors";
 import { spawnSync, type StdioOptions } from "node:child_process";
 import { gitTry, gitRun, gitRunAllowFail, gitOk, branchExists } from "./git.js";
@@ -16,10 +16,9 @@ import {
   dayCapacity,
   localDate,
   minutesOf,
-  isValidHHMM,
   type DayWindow,
-  type Stamp,
 } from "./time-distribution.js";
+import { editSchedule } from "./schedule-editor.js";
 
 const MIN_GAP_MIN = 20;
 const WORK_START_MIN = 10 * 60; // 10:00
@@ -27,10 +26,6 @@ const WORK_END_MIN = 16 * 60 + 30; // 16:30
 
 function fmt(t: number): string {
   return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
 }
 
 function todayAt(min: number): Date {
@@ -53,12 +48,6 @@ function eachDate(startDT: Date, endDT: Date): string[] {
     cursor.setDate(cursor.getDate() + 1);
   }
   return out;
-}
-
-function parseStamp(s: string): Stamp | null {
-  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})$/.exec(s.trim());
-  if (!m || !isValidHHMM(m[2]!)) return null;
-  return { date: m[1]!, time: m[2]! };
 }
 
 // Once shipped, gites rebases `work` onto `live`, so `live` is normally an
@@ -163,11 +152,14 @@ export async function ship(): Promise<void> {
 
   // --- session start/end derivation ---------------------------------------
   // Start = last commit already on `live`; if `live` has nothing beyond its
-  // base yet, start today at 10:00. A stale last commit yields a multi-day span.
+  // base yet, start at the first commit staged in gites (the oldest one being
+  // shipped). A stale last commit yields a multi-day span.
   const base = baseBranch(live);
   const liveHasNew = gitTry("rev-list", "--count", `${base}..${live}`) !== "0";
-  const lastISO = liveHasNew ? gitTry("log", "-1", "--format=%cI", live) : "";
-  const startDT = lastISO ? new Date(lastISO) : todayAt(WORK_START_MIN);
+  const startISO = liveHasNew
+    ? gitTry("log", "-1", "--format=%cI", live)
+    : gitTry("log", "-1", "--format=%aI", allShas[0]!);
+  const startDT = startISO ? new Date(startISO) : todayAt(WORK_START_MIN);
   const endDT = new Date();
 
   const candidateDates = eachDate(startDT, endDT);
@@ -233,67 +225,26 @@ export async function ship(): Promise<void> {
       ? `Warning: ${count} commits exceed the ${capacity}-slot capacity of the selected days. Spilling ${count - capacity} past ${fmt(days[days.length - 1]!.endMin)} on the last day.`
       : "";
 
-  let schedule = genSchedule(count, days, MIN_GAP_MIN);
+  const initial = genSchedule(count, days, MIN_GAP_MIN);
 
   // --- time editing TUI ----------------------------------------------------
-  for (;;) {
-    console.clear();
-    printArt();
-    console.log(pc.bold(accent(`Ship ${count} commit(s) to '${live}'`)));
-    console.log(
-      pc.dim(
-        `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} – ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
-      ),
-    );
-    if (overflowMsg) console.log(pc.yellow(overflowMsg));
-    console.log("");
+  console.clear();
+  printArt();
+  const result = await editSchedule({
+    title: `Ship ${count} commit(s) to '${live}'`,
+    subtitle: `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} - ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
+    overflow: overflowMsg || undefined,
+    rows: shas.map((sha, i) => ({ sha, subject: subjects[i]! })),
+    schedule: initial,
+    regenerate: () => genSchedule(count, days, MIN_GAP_MIN),
+    validate: validateSchedule,
+  });
 
-    const commitChoices = shas.map((sha, i) => ({
-      name: `${schedule[i]!.date.slice(5)} ${schedule[i]!.time.padEnd(5)}  ${sha.slice(0, 8)}  ${subjects[i]}`,
-      value: `edit:${i}`,
-    }));
-
-    const choice = await select<string>({
-      message: "↑↓ navigate, Enter to edit time or confirm",
-      choices: [
-        ...commitChoices,
-        new Separator(),
-        { name: "✓ Confirm and ship", value: "confirm" },
-        { name: "↻ Regenerate random times", value: "regen" },
-        { name: "✗ Abort", value: "abort" },
-      ],
-      default: "confirm",
-      pageSize: 20,
-    });
-
-    if (choice === "confirm") {
-      if (!validateSchedule(schedule)) {
-        console.log(pc.red("Times invalid or not strictly increasing. Fix them first."));
-        await sleep(2000);
-        continue;
-      }
-      break;
-    } else if (choice === "regen") {
-      schedule = genSchedule(count, days, MIN_GAP_MIN);
-    } else if (choice === "abort") {
-      console.log("Aborted.");
-      return;
-    } else if (choice.startsWith("edit:")) {
-      const idx = parseInt(choice.slice(5), 10);
-      const cur = `${schedule[idx]!.date} ${schedule[idx]!.time}`;
-      const newVal = await input({
-        message: `New date/time (YYYY-MM-DD HH:MM) for commit ${idx + 1}:`,
-        default: cur,
-      });
-      const parsed = parseStamp(newVal);
-      if (parsed) {
-        schedule[idx] = parsed;
-      } else {
-        console.log(pc.red("Invalid format, ignored."));
-        await sleep(1000);
-      }
-    }
+  if (result.action === "abort") {
+    console.log("Aborted.");
+    return;
   }
+  const schedule = result.schedule;
 
   // --- confirm + cherry-pick ----------------------------------------------
   console.clear();
