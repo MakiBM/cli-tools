@@ -1,42 +1,20 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import {
-  genTimes,
-  validateTimes,
   isValidHHMM,
   parseHHMM,
-  buildDayWindows,
-  genSchedule,
+  canvasLength,
+  posToStamp,
+  stampToPos,
+  distribute,
   validateSchedule,
-  dayCapacity,
   type DayWindow,
 } from "../src/time-distribution.js";
 
-const WS = 10 * 60; // 10:00
-const WE = 16 * 60 + 30; // 16:30
-
-test("genTimes produces strictly increasing times with min gap", () => {
-  const start = 11 * 60 + 30;
-  const end = 16 * 60 + 30;
-  for (let count = 1; count <= 10; count++) {
-    const t = genTimes(count, start, end, 20);
-    assert.equal(t.length, count);
-    assert.ok(validateTimes(t));
-    if (count > 1) {
-      for (let i = 1; i < count; i++) {
-        assert.ok(parseHHMM(t[i]!)! - parseHHMM(t[i - 1]!)! >= 20);
-      }
-    }
-  }
-});
-
-test("genTimes overflows past window when count too high", () => {
-  const start = 11 * 60 + 30;
-  const end = 12 * 60;
-  const t = genTimes(5, start, end, 20);
-  assert.equal(t.length, 5);
-  assert.ok(validateTimes(t));
-  assert.ok(parseHHMM(t[4]!)! > end);
+const day = (date: string, startMin: number, endMin: number): DayWindow => ({
+  date,
+  startMin,
+  endMin,
 });
 
 test("isValidHHMM accepts canonical format", () => {
@@ -46,101 +24,78 @@ test("isValidHHMM accepts canonical format", () => {
   assert.ok(!isValidHHMM("abc"));
 });
 
-test("validateTimes rejects non-increasing sequences", () => {
-  assert.ok(!validateTimes(["11:30", "11:30"]));
-  assert.ok(!validateTimes(["12:00", "11:00"]));
-  assert.ok(validateTimes(["11:30", "12:00", "12:30"]));
+test("canvasLength sums working minutes across days", () => {
+  const days = [day("2026-07-01", 600, 660), day("2026-07-02", 480, 540)];
+  assert.equal(canvasLength(days), 120);
 });
 
-const D1: DayWindow = { date: "2026-07-01", startMin: WS, endMin: WE };
-const D2: DayWindow = { date: "2026-07-02", startMin: WS, endMin: WE };
-const D3: DayWindow = { date: "2026-07-03", startMin: WS, endMin: WE };
+test("posToStamp walks days and skips the overnight gap", () => {
+  const days = [day("2026-07-01", 600, 660), day("2026-07-02", 480, 540)];
+  assert.deepEqual(posToStamp(0, days), { date: "2026-07-01", time: "10:00" });
+  assert.deepEqual(posToStamp(60, days), { date: "2026-07-01", time: "11:00" });
+  assert.deepEqual(posToStamp(61, days), { date: "2026-07-02", time: "08:01" });
+  assert.deepEqual(posToStamp(120, days), { date: "2026-07-02", time: "09:00" });
+});
 
-test("genSchedule stays strictly increasing across days", () => {
-  const s = genSchedule(9, [D1, D2, D3], 20);
-  assert.equal(s.length, 9);
+test("posToStamp clamps out-of-range positions to the canvas", () => {
+  const days = [day("2026-07-01", 600, 660)];
+  assert.deepEqual(posToStamp(-5, days), { date: "2026-07-01", time: "10:00" });
+  assert.deepEqual(posToStamp(999, days), { date: "2026-07-01", time: "11:00" });
+});
+
+test("stampToPos is the inverse of posToStamp across days", () => {
+  const days = [day("2026-07-01", 600, 660), day("2026-07-02", 480, 540)];
+  assert.equal(stampToPos({ date: "2026-07-01", time: "10:30" }, days), 30);
+  assert.equal(stampToPos({ date: "2026-07-02", time: "08:30" }, days), 90);
+});
+
+test("distribute anchors first at canvas start and last at now, strictly increasing", () => {
+  const days = [day("2026-07-16", 991, 1080), day("2026-07-17", 480, 648)];
+  const s = distribute([50, 50, 50, 50, 50, 50], days, () => 0.5);
+  assert.equal(s.length, 6);
   assert.ok(validateSchedule(s));
+  assert.deepEqual(s[0], { date: "2026-07-16", time: "16:31" }); // first commit's real time
+  assert.deepEqual(s[5], { date: "2026-07-17", time: "10:48" }); // now
 });
 
-test("genSchedule allocates roughly proportional to span", () => {
-  const wide: DayWindow = { date: "2026-07-01", startMin: WS, endMin: WS + 300 };
-  const narrow: DayWindow = { date: "2026-07-02", startMin: WS, endMin: WS + 60 };
-  const s = genSchedule(12, [wide, narrow], 20);
-  assert.equal(s.length, 12);
-  const onWide = s.filter((x) => x.date === "2026-07-01").length;
-  const onNarrow = s.filter((x) => x.date === "2026-07-02").length;
-  assert.ok(onWide > onNarrow);
+test("distribute never places a stamp outside the canvas", () => {
+  const days = [day("2026-07-16", 991, 1080), day("2026-07-17", 480, 648)];
+  for (let i = 0; i < 20; i++) {
+    const s = distribute([10, 200, 5, 80, 1, 300], days);
+    assert.ok(validateSchedule(s));
+    for (const st of s) {
+      const inDay1 =
+        st.date === "2026-07-16" && parseHHMM(st.time)! >= 991 && parseHHMM(st.time)! <= 1080;
+      const inDay2 =
+        st.date === "2026-07-17" && parseHHMM(st.time)! >= 480 && parseHHMM(st.time)! <= 648;
+      assert.ok(inDay1 || inDay2, `${st.date} ${st.time} outside canvas`);
+    }
+  }
 });
 
-test("genSchedule caps non-final day, final day spills", () => {
-  const tiny1: DayWindow = { date: "2026-07-01", startMin: WS, endMin: WS + 40 };
-  const tiny2: DayWindow = { date: "2026-07-02", startMin: WS, endMin: WS + 40 };
-  const s = genSchedule(10, [tiny1, tiny2], 20);
-  assert.equal(s.length, 10);
-  assert.ok(validateSchedule(s));
-  const day1 = s.filter((x) => x.date === "2026-07-01");
-  const cap1 = dayCapacity(tiny1, 20);
-  assert.ok(day1.length <= cap1, "non-final day within capacity");
-  for (const t of day1) assert.ok(parseHHMM(t.time)! <= tiny1.endMin);
-  const day2 = s.filter((x) => x.date === "2026-07-02");
-  assert.ok(parseHHMM(day2[day2.length - 1]!.time)! > tiny2.endMin, "final day spills");
+test("distribute weights the gap before a commit by its size", () => {
+  // Single day 0..1000 min. Middle commit is huge -> a large gap precedes it.
+  const days = [day("2026-07-01", 0, 1000)];
+  const s = distribute([1, 1000, 1], days, () => 0.5);
+  const gapBeforeBig = parseHHMM(s[1]!.time)! - parseHHMM(s[0]!.time)!;
+  const gapAfterBig = parseHHMM(s[2]!.time)! - parseHHMM(s[1]!.time)!;
+  assert.ok(gapBeforeBig > gapAfterBig, "big commit gets the larger preceding gap");
 });
 
-test("genSchedule single day matches genTimes count and spill", () => {
-  const tiny: DayWindow = { date: "2026-07-01", startMin: WS, endMin: WS + 40 };
-  const s = genSchedule(5, [tiny], 20);
+test("distribute squeezes when the canvas is tight, staying inside it", () => {
+  const days = [day("2026-07-01", 600, 604)]; // 4-minute window
+  const s = distribute([1, 1, 1, 1, 1], days, () => 0.5);
   assert.equal(s.length, 5);
-  assert.ok(parseHHMM(s[4]!.time)! > tiny.endMin);
+  assert.ok(validateSchedule(s));
+  assert.equal(s[0]!.time, "10:00");
+  assert.equal(s[4]!.time, "10:04");
 });
 
-test("genSchedule zero-length window yields deterministic gap spill", () => {
-  const zero: DayWindow = { date: "2026-07-01", startMin: WS, endMin: WS };
-  const s = genSchedule(3, [zero], 20);
-  assert.deepEqual(
-    s.map((x) => x.time),
-    ["10:00", "10:20", "10:40"],
-  );
-});
-
-test("genSchedule returns empty for no days or zero count", () => {
-  assert.deepEqual(genSchedule(3, [], 20), []);
-  assert.deepEqual(genSchedule(0, [D1], 20), []);
-});
-
-test("buildDayWindows clamps start and end days", () => {
-  const start = new Date(2026, 6, 1, 11, 30); // 11:30
-  const end = new Date(2026, 6, 3, 14, 12); // 14:12
-  const w = buildDayWindows(start, end, new Set(), WS, WE);
-  assert.equal(w.length, 3);
-  assert.equal(w[0]!.startMin, 11 * 60 + 30); // max(10:00, 11:30)
-  assert.equal(w[0]!.endMin, WE);
-  assert.equal(w[2]!.startMin, WS);
-  assert.equal(w[2]!.endMin, 14 * 60 + 12); // min(14:12, 16:30)
-});
-
-test("buildDayWindows drops start day when last commit is after work end", () => {
-  const start = new Date(2026, 6, 1, 17, 0); // 17:00, past 16:30
-  const end = new Date(2026, 6, 2, 12, 0);
-  const w = buildDayWindows(start, end, new Set(), WS, WE);
-  assert.equal(w.length, 1);
-  assert.equal(w[0]!.date, "2026-07-02");
-});
-
-test("buildDayWindows excludes off dates", () => {
-  const start = new Date(2026, 6, 1, 10, 0);
-  const end = new Date(2026, 6, 3, 16, 0);
-  const w = buildDayWindows(start, end, new Set(["2026-07-02"]), WS, WE);
-  assert.deepEqual(
-    w.map((x) => x.date),
-    ["2026-07-01", "2026-07-03"],
-  );
-});
-
-test("buildDayWindows collapses single day before work start", () => {
-  const start = new Date(2026, 6, 1, 8, 0); // 08:00
-  const end = new Date(2026, 6, 1, 9, 0); // 09:00, before 10:00
-  const w = buildDayWindows(start, end, new Set(), WS, WE);
-  assert.equal(w.length, 0);
+test("distribute handles single commit and empty inputs", () => {
+  const days = [day("2026-07-01", 600, 660)];
+  assert.deepEqual(distribute([42], days), [{ date: "2026-07-01", time: "11:00" }]);
+  assert.deepEqual(distribute([], days), []);
+  assert.deepEqual(distribute([1, 2], []), []);
 });
 
 test("validateSchedule enforces order and format", () => {

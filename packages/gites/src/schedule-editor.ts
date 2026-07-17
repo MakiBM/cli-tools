@@ -9,7 +9,14 @@ import {
 } from "@inquirer/core";
 import pc from "picocolors";
 import { accent } from "./colors.js";
-import { parseHHMM, localDate, type Stamp } from "./time-distribution.js";
+import {
+  parseHHMM,
+  canvasLength,
+  posToStamp,
+  stampToPos,
+  type DayWindow,
+  type Stamp,
+} from "./time-distribution.js";
 
 export interface CommitRow {
   sha: string;
@@ -19,9 +26,9 @@ export interface CommitRow {
 export interface ScheduleEditorConfig {
   title: string;
   subtitle: string;
-  overflow?: string;
   rows: CommitRow[];
   schedule: Stamp[];
+  days: DayWindow[];
   regenerate: () => Stamp[];
   validate: (schedule: readonly Stamp[]) => boolean;
 }
@@ -34,16 +41,20 @@ function fmt(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
 
-function shiftTime(time: string, deltaMin: number): string {
-  const cur = parseHHMM(time) ?? 0;
-  return fmt(Math.max(0, Math.min(24 * 60 - 1, cur + deltaMin)));
+// Move a stamp along the canvas by deltaMin, rolling across day boundaries and
+// clamping to the canvas ends (can't go before the first-day start or past now).
+function shiftTime(stamp: Stamp, deltaMin: number, days: readonly DayWindow[]): Stamp {
+  const pos = stampToPos(stamp, days) + deltaMin;
+  return posToStamp(Math.max(0, Math.min(pos, canvasLength(days))), days);
 }
 
-function shiftDate(date: string, deltaDays: number): string {
-  const [y, m, d] = date.split("-").map(Number);
-  const dt = new Date(y!, m! - 1, d!);
-  dt.setDate(dt.getDate() + deltaDays);
-  return localDate(dt);
+// Jump to the same time-of-day on the adjacent canvas day, clamped to that day's window.
+function shiftDate(stamp: Stamp, dir: number, days: readonly DayWindow[]): Stamp {
+  const idx = days.findIndex((d) => d.date === stamp.date);
+  const target = idx < 0 ? undefined : days[idx + dir];
+  if (!target) return stamp;
+  const cur = parseHHMM(stamp.time) ?? target.startMin;
+  return { date: target.date, time: fmt(Math.max(target.startMin, Math.min(target.endMin, cur))) };
 }
 
 function field(label: string, value: string, active: boolean): string {
@@ -81,8 +92,8 @@ export const editSchedule = createPrompt<ScheduleEditorResult, ScheduleEditorCon
           const next = schedule.slice();
           next[idx] =
             editField === "time"
-              ? { ...next[idx]!, time: shiftTime(next[idx]!.time, dir * 15) }
-              : { ...next[idx]!, date: shiftDate(next[idx]!.date, dir) };
+              ? shiftTime(next[idx]!, dir * 15, config.days)
+              : shiftDate(next[idx]!, dir, config.days);
           setSchedule(next);
         }
         return;
@@ -101,7 +112,7 @@ export const editSchedule = createPrompt<ScheduleEditorResult, ScheduleEditorCon
       if ((key.name === "left" || key.name === "right") && cursor < n) {
         const delta = key.name === "right" ? 15 : -15;
         const next = schedule.slice();
-        next[cursor] = { ...next[cursor]!, time: shiftTime(next[cursor]!.time, delta) };
+        next[cursor] = shiftTime(next[cursor]!, delta, config.days);
         setSchedule(next);
         setError("");
         return;
@@ -129,7 +140,6 @@ export const editSchedule = createPrompt<ScheduleEditorResult, ScheduleEditorCon
     });
 
     const head = [pc.bold(accent(config.title)), pc.dim(config.subtitle)];
-    if (config.overflow) head.push(pc.yellow(config.overflow));
 
     if (mode === "edit") {
       const idx = cursor;
