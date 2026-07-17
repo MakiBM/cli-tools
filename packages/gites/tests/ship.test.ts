@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { setupSandbox, teardown, inDir, run, type SandboxContext } from "./helpers.js";
-import { workDivergedFromLive, shipCandidateShas } from "../src/ship.js";
+import { workDivergedFromLive, shipCandidateShas, workMergedBaseUpstream } from "../src/ship.js";
 
 async function withSandbox(fn: (ctx: SandboxContext) => Promise<void> | void): Promise<void> {
   const ctx = setupSandbox();
@@ -77,5 +77,26 @@ test("shipCandidateShas: excludes base-upstream commits and merges pulled in by 
     const cands = shipCandidateShas("feat", "gites-feat", "main");
     assert.equal(cands.length, 1);
     assert.equal(run("git", ["log", "-1", "--format=%s", cands[0]!]).trim(), "work: only mine");
+  });
+});
+
+test("workMergedBaseUpstream: true only when base is merged into work but not yet on live", async () => {
+  await withSandbox(() => {
+    run("git", ["checkout", "-b", "feat", "main"]);
+    run("git", ["checkout", "-b", "gites-feat"]);
+    commitFile("w.txt", "W\n", "work: mine");
+
+    assert.equal(workMergedBaseUpstream("feat", "gites-feat", "main"), false);
+
+    run("git", ["checkout", "main"]);
+    commitFile("base.txt", "M\n", "base: advanced");
+    run("git", ["checkout", "gites-feat"]);
+    run("git", ["merge", "--no-edit", "main"]);
+    assert.equal(workMergedBaseUpstream("feat", "gites-feat", "main"), true);
+
+    // Once the base is also on live, merging it into work is harmless - no warning.
+    run("git", ["checkout", "feat"]);
+    run("git", ["merge", "--no-edit", "main"]);
+    assert.equal(workMergedBaseUpstream("feat", "gites-feat", "main"), false);
   });
 });

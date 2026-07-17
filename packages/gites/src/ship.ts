@@ -88,6 +88,19 @@ export function workDivergedFromLive(live: string, work: string): boolean {
   return !gitOk("merge-base", "--is-ancestor", live, work);
 }
 
+// True when the base upstream (e.g. origin/main) was merged into `work` but is not
+// yet on `live`: it's then an ancestor of `work` but not of `live`. Ship excludes
+// those commits + the merge commit from its range (so it survives), but that
+// silently drops any conflict resolution the merge carried - the base must be
+// integrated on the client branch instead. Detect this and stop with instructions.
+export function workMergedBaseUpstream(live: string, work: string, baseUpstream: string): boolean {
+  return (
+    gitOk("rev-parse", "--verify", baseUpstream) &&
+    gitOk("merge-base", "--is-ancestor", baseUpstream, work) &&
+    !gitOk("merge-base", "--is-ancestor", baseUpstream, live)
+  );
+}
+
 // Commits to ship: `--cherry-pick --right-only` drops any whose patch-id is already
 // on `live` (e.g. re-listed after a reparent), leaving only genuinely new work.
 // `baseUpstream` (e.g. origin/main), when given, is excluded too: commits that
@@ -149,7 +162,23 @@ export async function ship(): Promise<void> {
     return;
   }
 
-  const allShas = shipCandidateShas(live, work, `${originRemote()}/${baseBranch(live)}`);
+  const baseUpstream = `${originRemote()}/${baseBranch(live)}`;
+
+  // Merging the base into the work branch is a common instinct, but ship integrates
+  // the base on the client branch: the merge's conflict resolution lives only in the
+  // merge commit, which the ship range excludes - shipping would drop it silently.
+  if (workMergedBaseUpstream(live, work, baseUpstream)) {
+    console.log(pc.red(`'${work}' has '${baseUpstream}' merged into it.`));
+    console.log(`gites integrates the base on the client branch, not the work branch -`);
+    console.log(`shipping would drop the merge's conflict resolution. Do this instead:`);
+    console.log("");
+    console.log(`  git checkout ${live} && git merge ${baseUpstream}   # resolve here`);
+    console.log(`  git checkout ${work} && git rebase ${live}          # reparent work`);
+    console.log("  # then re-run 'gites ship'");
+    return;
+  }
+
+  const allShas = shipCandidateShas(live, work, baseUpstream);
 
   if (allShas.length === 0) {
     console.log("No new commits to ship.");
