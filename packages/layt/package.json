@@ -1,6 +1,6 @@
 {
   "name": "@makibm/layt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deterministic image layout slicer: recursive XY-cut on whitespace. Reads png/jpg/webp/gif/avif/svg, emits region boxes + crops.",
   "keywords": [
     "cli",
