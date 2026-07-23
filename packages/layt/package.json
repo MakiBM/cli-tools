@@ -1,0 +1,48 @@
+{
+  "name": "@makibm/layt",
+  "version": "1.0.0",
+  "description": "Deterministic image layout slicer: recursive XY-cut on whitespace. Reads png/jpg/webp/gif/avif/svg, emits region boxes + crops.",
+  "keywords": [
+    "cli",
+    "crop",
+    "image",
+    "layout",
+    "screenshot",
+    "segmentation",
+    "slice",
+    "xy-cut"
+  ],
+  "license": "MIT",
+  "author": "Bartek Makos",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MakiBM/cli-tools.git",
+    "directory": "packages/layt"
+  },
+  "bin": {
+    "layt": "./dist/bin/layt.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && chmod +x dist/bin/layt.js",
+    "dev": "tsx bin/layt.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@makibm/cli-kit": "workspace:^",
+    "sharp": "^0.34.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

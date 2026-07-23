@@ -9,6 +9,8 @@ pnpm-workspaces monorepo of MakiBM CLI tools. Read this before editing.
 - `packages/gites` - `@makibm/gites` (bin `gites`), two-track git workflow.
 - `packages/twixer` - `@makibm/twixer` (bin `twixer`), Tailwind arbitrary-class finder.
 - `packages/hideai` - `@makibm/hideai` (bin `hideai`), AI-trailer commit blocker.
+- `packages/layt` - `@makibm/layt` (bin `layt`), deterministic image layout slicer
+  (recursive XY-cut on whitespace; png/jpg/webp/gif/avif/svg via sharp).
 
 Leaf tools depend on cli-kit via `"@makibm/cli-kit": "workspace:^"`.
 
@@ -54,6 +56,13 @@ Filter one package: `pnpm --filter @makibm/twixer <script>`.
 - **twixer** is a deep-module refactor: pure `matching.ts`, per-scan `createTheme()`,
   and a reusable `scan(options)` seam (no console/exit). Test through `scan()`; the
   CLI/TUI just render its result. Keep new logic out of `cli.ts`/`tui.ts`.
+- **layt** follows the same deep-module shape: pure `slice.ts` (XY-cut over an ink
+  mask, no I/O), `image.ts` (sharp decode/mask/crop, reads png/jpg/webp/gif/avif/
+  tiff/svg), and an async `layt(options)` seam that reads/slices/writes and returns
+  a result (no console/exit). Test through `slice()` and `layt()`. The TUI's path
+  autocompletion uses cli-kit's `search` re-export. sharp ships prebuilt libvips
+  binaries, so its ignored install script (pnpm warning) is fine - don't add it to
+  `onlyBuiltDependencies`.
 
 ## Runtime identifiers (don't confuse tools)
 

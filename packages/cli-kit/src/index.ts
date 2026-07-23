@@ -18,6 +18,7 @@ export {
   menu,
   type MenuChoice,
   type MenuOptions,
+  search,
   select,
 } from "./menu.js";
 export { Spinner, type SpinnerOptions, withSpinner } from "./spinner.js";

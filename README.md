@@ -12,6 +12,7 @@ line and subtitle), color palette, help formatting, and interactive menus.
 | [`@makibm/gites`](packages/gites)     | `gites`  | Two-track git workflow for batching and timing client commits.                            |
 | [`@makibm/twixer`](packages/twixer)   | `twixer` | Find Tailwind v4 arbitrary-value classes and suggest the matching default token.          |
 | [`@makibm/hideai`](packages/hideai)   | `hideai` | Block commits with AI-assistant trailers (Claude, Copilot, Cursor, …).                    |
+| [`@makibm/layt`](packages/layt)       | `layt`   | Deterministic image layout slicer (recursive XY-cut on whitespace).                       |
 
 ## Develop
 
@@ -31,6 +32,7 @@ Run a tool during development:
 pnpm --filter @makibm/gites dev
 pnpm --filter @makibm/twixer dev
 pnpm --filter @makibm/hideai dev
+pnpm --filter @makibm/layt dev
 ```
 
 ## Link the commands globally
@@ -40,8 +42,8 @@ pnpm needs its global bin directory on `PATH` once:
 ```bash
 pnpm setup                                    # adds PNPM_HOME to your shell profile
 exec $SHELL                                   # reload the shell
-pnpm --filter @makibm/gites --filter @makibm/twixer --filter @makibm/hideai \
-  exec pnpm link --global                     # expose gites / twixer / hideai
+pnpm --filter @makibm/gites --filter @makibm/twixer --filter @makibm/hideai --filter @makibm/layt \
+  exec pnpm link --global                     # expose gites / twixer / hideai / layt
 ```
 
 ## Stack

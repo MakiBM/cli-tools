@@ -1,4 +1,4 @@
-export { checkbox, confirm, input, select } from "@inquirer/prompts";
+export { checkbox, confirm, input, search, select } from "@inquirer/prompts";
 
 import { select } from "@inquirer/prompts";
 
