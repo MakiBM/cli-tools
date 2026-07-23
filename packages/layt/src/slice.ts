@@ -10,13 +10,26 @@ export interface LayoutNode extends Box {
 }
 
 export interface SliceOptions {
-  /** Minimum run of empty rows/columns (in px) that counts as a cut gutter. */
+  /** Minimum run of background rows/columns (in px) that counts as a cut gutter. */
   minGap: number;
   /** Regions smaller than this in both dimensions are never split further. */
   minSize: number;
+  /** Per-channel tolerance for treating a pixel as the region's background. */
+  tolerance: number;
+  /**
+   * A row/column counts as a gutter when its ink is at most this fraction of its
+   * length. Non-zero so a sparse element crossing an otherwise-empty gutter (a
+   * header label in a wide margin, a thin divider) does not block the cut.
+   */
+  noise: number;
 }
 
-export const DEFAULT_SLICE_OPTIONS: SliceOptions = { minGap: 16, minSize: 24 };
+export const DEFAULT_SLICE_OPTIONS: SliceOptions = {
+  minGap: 16,
+  minSize: 24,
+  tolerance: 45,
+  noise: 0.03,
+};
 
 interface Region {
   x0: number;
@@ -25,27 +38,89 @@ interface Region {
   y1: number;
 }
 
-const isInk = (mask: Uint8Array, width: number, x: number, y: number): boolean =>
-  mask[y * width + x] === 1;
+interface Rgb {
+  r: number;
+  g: number;
+  b: number;
+}
 
-/** Shrink a region to the tight bounding box of its ink, or null if empty. */
-const shrinkToInk = (mask: Uint8Array, width: number, r: Region): Region | null => {
-  let minX = r.x1;
-  let minY = r.y1;
-  let maxX = r.x0 - 1;
-  let maxY = r.y0 - 1;
+/**
+ * Background color of a region: the mode of a 4-bit/channel histogram, but the
+ * winning bucket is the one whose 3x3x3 neighborhood holds the most pixels, and
+ * the color returned is that neighborhood's mean. Merging neighboring buckets
+ * keeps a noisy/gradient background (e.g. near-black shading into dark brown)
+ * from fragmenting across buckets and being mistaken for content. Deriving it
+ * per region is what lets the slicer descend through nested backgrounds: the
+ * page's cluster is the page background, a card's cluster is the card's.
+ */
+const regionBackground = (data: Uint8Array, width: number, r: Region): Rgb => {
+  const count = new Int32Array(4096);
+  const sr = new Float64Array(4096);
+  const sg = new Float64Array(4096);
+  const sb = new Float64Array(4096);
   for (let y = r.y0; y < r.y1; y++) {
+    const base = y * width;
     for (let x = r.x0; x < r.x1; x++) {
-      if (!isInk(mask, width, x, y)) continue;
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
+      const i = (base + x) * 4;
+      if (data[i + 3] < 8) continue;
+      const key = ((data[i] >> 4) << 8) | ((data[i + 1] >> 4) << 4) | (data[i + 2] >> 4);
+      count[key]++;
+      sr[key] += data[i];
+      sg[key] += data[i + 1];
+      sb[key] += data[i + 2];
     }
   }
-  if (maxX < minX || maxY < minY) return null;
-  return { x0: minX, y0: minY, x1: maxX + 1, y1: maxY + 1 };
+
+  const neighbors = (key: number): number[] => {
+    const qr = (key >> 8) & 0xf;
+    const qg = (key >> 4) & 0xf;
+    const qb = key & 0xf;
+    const out: number[] = [];
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dg = -1; dg <= 1; dg++) {
+        for (let db = -1; db <= 1; db++) {
+          const nr = qr + dr;
+          const ng = qg + dg;
+          const nb = qb + db;
+          if (nr >= 0 && nr < 16 && ng >= 0 && ng < 16 && nb >= 0 && nb < 16) {
+            out.push((nr << 8) | (ng << 4) | nb);
+          }
+        }
+      }
+    }
+    return out;
+  };
+
+  let bestKey = 0;
+  let bestMass = -1;
+  for (let key = 0; key < 4096; key++) {
+    if (count[key] === 0) continue;
+    let mass = 0;
+    for (const nb of neighbors(key)) mass += count[nb];
+    if (mass > bestMass) {
+      bestMass = mass;
+      bestKey = key;
+    }
+  }
+
+  let cr = 0;
+  let cg = 0;
+  let cb = 0;
+  let cn = 0;
+  for (const nb of neighbors(bestKey)) {
+    cr += sr[nb];
+    cg += sg[nb];
+    cb += sb[nb];
+    cn += count[nb];
+  }
+  return { r: Math.round(cr / cn), g: Math.round(cg / cn), b: Math.round(cb / cn) };
 };
+
+const isInk = (data: Uint8Array, i: number, bg: Rgb, tol: number): boolean =>
+  data[i + 3] >= 8 &&
+  (Math.abs(data[i] - bg.r) > tol ||
+    Math.abs(data[i + 1] - bg.g) > tol ||
+    Math.abs(data[i + 2] - bg.b) > tol);
 
 /** Content ranges [start, end) between gutters of >= minGap empty cells in a profile. */
 const segmentsFromProfile = (profile: number[], minGap: number): Array<[number, number]> => {
@@ -84,61 +159,88 @@ const widestGap = (profile: number[]): number => {
   return widest;
 };
 
+const firstNonZero = (p: number[]): number => p.findIndex((v) => v > 0);
+const lastNonZero = (p: number[]): number => {
+  for (let i = p.length - 1; i >= 0; i--) if (p[i] > 0) return i;
+  return -1;
+};
+
 const cut = (
-  mask: Uint8Array,
+  data: Uint8Array,
   width: number,
   region: Region,
   opts: SliceOptions,
+  isContent: boolean,
 ): LayoutNode | null => {
-  const trimmed = shrinkToInk(mask, width, region);
-  if (!trimmed) return null;
+  const bg = regionBackground(data, width, region);
+  const rw = region.x1 - region.x0;
+  const rh = region.y1 - region.y0;
 
-  const w = trimmed.x1 - trimmed.x0;
-  const h = trimmed.y1 - trimmed.y0;
-  const box: Box = { x: trimmed.x0, y: trimmed.y0, width: w, height: h };
-
-  if (w < opts.minSize && h < opts.minSize) return { ...box, children: [] };
-
-  const rowProfile = Array.from<number>({ length: h }).fill(0);
-  const colProfile = Array.from<number>({ length: w }).fill(0);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      if (isInk(mask, width, trimmed.x0 + x, trimmed.y0 + y)) {
-        rowProfile[y]++;
-        colProfile[x]++;
+  const rowInk = Array.from<number>({ length: rh }).fill(0);
+  const colInk = Array.from<number>({ length: rw }).fill(0);
+  for (let y = 0; y < rh; y++) {
+    const rowBase = (region.y0 + y) * width;
+    for (let x = 0; x < rw; x++) {
+      if (isInk(data, (rowBase + region.x0 + x) * 4, bg, opts.tolerance)) {
+        rowInk[y]++;
+        colInk[x]++;
       }
     }
   }
 
-  const rowGap = widestGap(rowProfile);
-  const colGap = widestGap(colProfile);
-  const horizontal = rowGap >= colGap;
-  const profile = horizontal ? rowProfile : colProfile;
-  const segments = segmentsFromProfile(profile, opts.minGap);
+  const rowFloor = Math.floor(opts.noise * rw);
+  const colFloor = Math.floor(opts.noise * rh);
+  const rows = rowInk.map((v) => (v > rowFloor ? 1 : 0));
+  const cols = colInk.map((v) => (v > colFloor ? 1 : 0));
 
+  const top = firstNonZero(rows);
+  const left = firstNonZero(cols);
+  // No ink against this region's own background: either a solid content block the
+  // parent already isolated (keep it whole) or genuine empty background (drop it).
+  if (top === -1 || left === -1) {
+    return isContent ? { x: region.x0, y: region.y0, width: rw, height: rh, children: [] } : null;
+  }
+  const bottom = lastNonZero(rows);
+  const right = lastNonZero(cols);
+
+  const box: Box = {
+    x: region.x0 + left,
+    y: region.y0 + top,
+    width: right - left + 1,
+    height: bottom - top + 1,
+  };
+  if (box.width < opts.minSize && box.height < opts.minSize) return { ...box, children: [] };
+
+  const rowSpan = rows.slice(top, bottom + 1);
+  const colSpan = cols.slice(left, right + 1);
+  const horizontal = widestGap(rowSpan) >= widestGap(colSpan);
+  const profile = horizontal ? rowSpan : colSpan;
+  const segments = segmentsFromProfile(profile, opts.minGap);
   if (segments.length < 2) return { ...box, children: [] };
 
   const children: LayoutNode[] = [];
   for (const [start, end] of segments) {
     const sub: Region = horizontal
-      ? { x0: trimmed.x0, y0: trimmed.y0 + start, x1: trimmed.x1, y1: trimmed.y0 + end }
-      : { x0: trimmed.x0 + start, y0: trimmed.y0, x1: trimmed.x0 + end, y1: trimmed.y1 };
-    const child = cut(mask, width, sub, opts);
+      ? { x0: box.x, y0: box.y + start, x1: box.x + box.width, y1: box.y + end }
+      : { x0: box.x + start, y0: box.y, x1: box.x + end, y1: box.y + box.height };
+    const child = cut(data, width, sub, opts, true);
     if (child) children.push(child);
   }
-  return { ...box, children };
+  return children.length < 2 ? { ...box, children: [] } : { ...box, children };
 };
 
 /**
- * Recursive XY-cut over a binary ink mask. Returns the layout tree, or null
- * when the mask has no ink at all. Fully deterministic for a given mask.
+ * Recursive XY-cut over an RGBA raster. Each region derives its own background
+ * from its dominant color, so it descends through nested backgrounds (page ->
+ * card -> section). Returns the layout tree, or null when the region has no
+ * content. Fully deterministic for a given raster.
  */
 export const sliceLayout = (
-  mask: Uint8Array,
+  data: Uint8Array,
   width: number,
   height: number,
   opts: SliceOptions = DEFAULT_SLICE_OPTIONS,
-): LayoutNode | null => cut(mask, width, { x0: 0, y0: 0, x1: width, y1: height }, opts);
+): LayoutNode | null => cut(data, width, { x0: 0, y0: 0, x1: width, y1: height }, opts, false);
 
 /** Flatten a layout tree to its leaf boxes in reading order (top-down, left-right). */
 export const leaves = (node: LayoutNode | null): Box[] => {

@@ -14,7 +14,7 @@ export async function runTui(): Promise<void> {
     const image = await pathPrompt({ message: "Image to slice:", fileFilter: isSupported });
     const base = path.basename(image, path.extname(image));
 
-    const out = (await input({ message: "Output directory:", default: `${base}-layt` })).trim();
+    const out = (await input({ message: "Output directory:", default: ".layt" })).trim();
     const name = (await input({ message: "Base filename:", default: base })).trim();
     const crops = await confirm({ message: "Write slice images?", default: true });
 

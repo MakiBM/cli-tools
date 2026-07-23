@@ -84,25 +84,6 @@ export const resolveBackground = (raster: Raster, bg: string): Rgb =>
 export const toHex = ({ r, g, b }: Rgb): string =>
   "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 
-/**
- * Binary ink mask: 1 where a pixel differs from the background beyond `threshold`
- * (per-channel Chebyshev distance) or is transparent, 0 otherwise.
- */
-export const buildInkMask = (raster: Raster, bg: Rgb, threshold: number): Uint8Array => {
-  const { width, height, data } = raster;
-  const mask = new Uint8Array(width * height);
-  for (let p = 0, i = 0; p < mask.length; p++, i += 4) {
-    const alpha = data[i + 3];
-    const isBg =
-      alpha >= 8 &&
-      Math.abs(data[i] - bg.r) <= threshold &&
-      Math.abs(data[i + 1] - bg.g) <= threshold &&
-      Math.abs(data[i + 2] - bg.b) <= threshold;
-    mask[p] = isBg ? 0 : 1;
-  }
-  return mask;
-};
-
 /** Crop a region straight from the decoded raster and encode it as PNG. */
 export const cropPng = (raster: Raster, box: Box): Promise<Buffer> =>
   sharp(raster.data, { raw: { width: raster.width, height: raster.height, channels: 4 } })

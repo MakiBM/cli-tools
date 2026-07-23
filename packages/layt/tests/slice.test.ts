@@ -4,21 +4,25 @@ import { type Box, leaves, sliceLayout } from "../src/slice.js";
 const W = 200;
 const H = 200;
 
-const maskWith = (rects: Box[]): Uint8Array => {
-  const mask = new Uint8Array(W * H);
+/** White RGBA canvas with black blocks painted in. */
+const canvasWith = (rects: Box[]): Uint8Array => {
+  const data = new Uint8Array(W * H * 4).fill(255);
   for (const r of rects) {
     for (let y = r.y; y < r.y + r.height; y++) {
-      for (let x = r.x; x < r.x + r.width; x++) mask[y * W + x] = 1;
+      for (let x = r.x; x < r.x + r.width; x++) {
+        const i = (y * W + x) * 4;
+        data[i] = data[i + 1] = data[i + 2] = 0;
+      }
     }
   }
-  return mask;
+  return data;
 };
 
-const boxes = (rects: Box[]): Box[] => leaves(sliceLayout(maskWith(rects), W, H));
+const boxes = (rects: Box[]): Box[] => leaves(sliceLayout(canvasWith(rects), W, H));
 
 describe("sliceLayout", () => {
-  it("returns null for an empty mask", () => {
-    expect(sliceLayout(new Uint8Array(W * H), W, H)).toBeNull();
+  it("returns null for a blank canvas", () => {
+    expect(sliceLayout(new Uint8Array(W * H * 4).fill(255), W, H)).toBeNull();
   });
 
   it("tightly bounds a single block", () => {
@@ -60,15 +64,37 @@ describe("sliceLayout", () => {
   it("keeps a block whole when gaps are below minGap", () => {
     const result = leaves(
       sliceLayout(
-        maskWith([
+        canvasWith([
           { x: 20, y: 10, width: 100, height: 30 },
           { x: 20, y: 45, width: 100, height: 30 },
         ]),
         W,
         H,
-        { minGap: 20, minSize: 24 },
+        { minGap: 20, minSize: 24, tolerance: 12, noise: 0.03 },
       ),
     );
     expect(result).toHaveLength(1);
+  });
+
+  it("isolates two cards sitting on a differently colored page", () => {
+    const data = new Uint8Array(W * H * 4).fill(255);
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = data[i + 1] = data[i + 2] = 0; // black page
+    }
+    const card = (x0: number, y0: number, w: number, h: number): void => {
+      for (let y = y0; y < y0 + h; y++) {
+        for (let x = x0; x < x0 + w; x++) {
+          const i = (y * W + x) * 4;
+          data[i] = data[i + 1] = data[i + 2] = 230; // cream
+        }
+      }
+    };
+    card(20, 20, 160, 60);
+    card(20, 130, 160, 50);
+
+    const result = leaves(sliceLayout(data, W, H));
+    expect(result).toHaveLength(2);
+    expect(result[0].y).toBe(20);
+    expect(result[1].y).toBe(130);
   });
 });

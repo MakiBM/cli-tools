@@ -1,13 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import {
-  buildInkMask,
-  cropPng,
-  decodeImage,
-  isSupported,
-  resolveBackground,
-  toHex,
-} from "./image.js";
+import { cropPng, decodeImage, isSupported, resolveBackground, toHex } from "./image.js";
 import { type Box, DEFAULT_SLICE_OPTIONS, type LayoutNode, leaves, sliceLayout } from "./slice.js";
 
 export interface LaytOptions {
@@ -19,8 +12,10 @@ export interface LaytOptions {
   name?: string;
   minGap?: number;
   minSize?: number;
-  /** Per-channel ink threshold, 0-255 (default 12). */
-  threshold?: number;
+  /** Per-channel tolerance for background detection, 0-255 (default 45). */
+  tolerance?: number;
+  /** Gutter noise floor as a fraction of line length, 0-1 (default 0.03). */
+  noise?: number;
   /** Background color: "auto" or a hex like "#ffffff" (default "auto"). */
   bg?: string;
   /** Skip writing slice crops; only detect boxes (and manifest, if writing). */
@@ -63,26 +58,28 @@ export const layt = async (options: LaytOptions): Promise<LaytResult> => {
   }
 
   const base = options.name?.trim() || path.basename(input, path.extname(input));
-  const outDir = path.resolve(options.out?.trim() || `${base}-layt`);
+  const outDir = path.resolve(options.out?.trim() || ".layt");
   const write = options.write !== false;
   const withCrops = options.crops !== false;
 
   const raster = await decodeImage(input);
   const bg = resolveBackground(raster, options.bg ?? "auto");
-  const threshold = options.threshold ?? 12;
-  const mask = buildInkMask(raster, bg, threshold);
 
-  const tree = sliceLayout(mask, raster.width, raster.height, {
+  const tree = sliceLayout(raster.data, raster.width, raster.height, {
     minGap: options.minGap ?? DEFAULT_SLICE_OPTIONS.minGap,
     minSize: options.minSize ?? DEFAULT_SLICE_OPTIONS.minSize,
+    tolerance: options.tolerance ?? DEFAULT_SLICE_OPTIONS.tolerance,
+    noise: options.noise ?? DEFAULT_SLICE_OPTIONS.noise,
   });
 
   const written: string[] = [];
-  const slices: SliceEntry[] = leaves(tree).map((box, i) => {
-    const index = i + 1;
-    const file = `${base}-${pad(index)}.png`;
-    return { index, file, ...box };
-  });
+  const slices: SliceEntry[] = leaves(tree)
+    .filter((box) => box.width >= 4 && box.height >= 4)
+    .map((box, i) => {
+      const index = i + 1;
+      const file = `${base}-${pad(index)}.png`;
+      return { index, file, ...box };
+    });
 
   let manifestPath: string | null = null;
   if (write) {

@@ -5,10 +5,13 @@ layout regions purely by the **whitespace between blocks** - no ML, no guessing.
 Reads `png`, `jpg/jpeg`, `webp`, `gif`, `avif`, `tiff` and `svg` (decoded with
 [sharp](https://sharp.pixelplumbing.com/)).
 
-Under the hood it runs a **recursive XY-cut**: it builds an ink mask (everything
-that differs from the background color), sums it into horizontal and vertical
-projection profiles, finds the widest empty gutter, cuts there, and recurses -
-alternating orientation naturally. The same image always yields the same boxes.
+Under the hood it runs a **recursive XY-cut**. Each region derives its own
+background from its dominant color, marks every pixel that differs from it as
+ink, sums that into horizontal and vertical projection profiles, finds the widest
+background gutter, cuts there, and recurses - alternating orientation naturally.
+Deriving the background **per region** is what lets it descend through nested
+backgrounds (a cream card over a dark page: the page splits first, then the card
+is analyzed against cream). The same image always yields the same boxes.
 
 Each region is reported as `x, y, width, height`. By default it also writes a
 PNG crop per region plus a `<name>.layt.json` manifest with the full nested tree.
@@ -39,18 +42,23 @@ npx @makibm/layt shot.png --no-crops
 
 ## Options
 
-| Flag                | Meaning                                                      |
-| ------------------- | ------------------------------------------------------------ |
-| `-o, --out <dir>`   | Output directory (default `./<name>-layt`)                   |
-| `-n, --name <base>` | Base filename for slices + manifest (default: image name)    |
-| `--min-gap <px>`    | Min whitespace gutter that counts as a cut (default 16)      |
-| `--min-size <px>`   | Regions smaller than this are not split further (default 24) |
-| `--threshold <n>`   | Per-channel ink threshold, 0-255 (default 12)                |
-| `--bg <auto\|#hex>` | Background color (default `auto` = dominant color)           |
-| `--json`            | Print the layout as JSON to stdout, write no files           |
-| `--no-crops`        | Write only the manifest, skip the slice PNGs                 |
-| `--no-color`        | Disable ANSI colors                                          |
-| `-h, --help`        | Show help                                                    |
+| Flag                | Meaning                                                        |
+| ------------------- | -------------------------------------------------------------- |
+| `-o, --out <dir>`   | Output directory (default `./.layt`)                           |
+| `-n, --name <base>` | Base filename for slices + manifest (default: image name)      |
+| `--min-gap <px>`    | Min background gutter that counts as a cut (default 16)        |
+| `--min-size <px>`   | Regions smaller than this are not split further (default 24)   |
+| `--tolerance <n>`   | Per-channel background tolerance, 0-255 (default 45)           |
+| `--noise <f>`       | Gutter noise floor as a fraction of line length (default 0.03) |
+| `--bg <auto\|#hex>` | Background color reported in the manifest (default `auto`)     |
+| `--json`            | Print the layout as JSON to stdout, write no files             |
+| `--no-crops`        | Write only the manifest, skip the slice PNGs                   |
+| `--no-color`        | Disable ANSI colors                                            |
+| `-h, --help`        | Show help                                                      |
+
+`--tolerance` absorbs background noise/gradients (raise it if a textured or dark
+background is mistaken for content); `--noise` lets a sparse element crossing a
+gutter (a header label in a wide margin) still count as a cut.
 
 Running `layt` with no arguments opens the interactive TUI. Passing an image (or
 any flag) runs headless, so an agent can drive the whole thing from the CLI.

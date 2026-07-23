@@ -16,7 +16,7 @@ const ABOUT = [
 const HELP = {
   usage: "layt <image> [options]",
   options: [
-    { flag: "-o, --out <dir>", summary: "Output directory (default: ./<name>-layt)" },
+    { flag: "-o, --out <dir>", summary: "Output directory (default: ./.layt)" },
     {
       flag: "-n, --name <base>",
       summary: "Base filename for slices + manifest (default: image name)",
@@ -26,7 +26,11 @@ const HELP = {
       flag: "--min-size <px>",
       summary: "Regions smaller than this are not split further (default 24)",
     },
-    { flag: "--threshold <n>", summary: "Per-channel ink threshold, 0-255 (default 12)" },
+    { flag: "--tolerance <n>", summary: "Per-channel background tolerance, 0-255 (default 45)" },
+    {
+      flag: "--noise <f>",
+      summary: "Gutter noise floor as a fraction of line length (default 0.03)",
+    },
     { flag: "--bg <auto|#hex>", summary: "Background color (default auto = dominant color)" },
     { flag: "--json", summary: "Print the layout as JSON to stdout, write no files (for agents)" },
     { flag: "--no-crops", summary: "Write only the manifest, skip the slice crops" },
@@ -57,7 +61,8 @@ const FLAGS_WITH_VALUE = new Set([
   "--name",
   "--min-gap",
   "--min-size",
-  "--threshold",
+  "--tolerance",
+  "--noise",
   "--bg",
 ]);
 
@@ -98,7 +103,8 @@ export async function run(argv: string[]): Promise<void> {
       name: valueOf(argv, "-n", "--name"),
       minGap: numberOf(argv, "--min-gap"),
       minSize: numberOf(argv, "--min-size"),
-      threshold: numberOf(argv, "--threshold"),
+      tolerance: numberOf(argv, "--tolerance"),
+      noise: numberOf(argv, "--noise"),
       bg: valueOf(argv, "--bg"),
       crops: !flags.has("--no-crops"),
       write: !json,
