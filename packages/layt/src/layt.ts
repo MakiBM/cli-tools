@@ -11,6 +11,8 @@ export interface LaytOptions {
   /** Base filename for slices and manifest (default: input basename). */
   name?: string;
   minGap?: number;
+  maxGap?: number;
+  gapScale?: number;
   minSize?: number;
   /** Per-channel tolerance for background detection, 0-255 (default 45). */
   tolerance?: number;
@@ -67,6 +69,8 @@ export const layt = async (options: LaytOptions): Promise<LaytResult> => {
 
   const tree = sliceLayout(raster.data, raster.width, raster.height, {
     minGap: options.minGap ?? DEFAULT_SLICE_OPTIONS.minGap,
+    maxGap: options.maxGap ?? DEFAULT_SLICE_OPTIONS.maxGap,
+    gapScale: options.gapScale ?? DEFAULT_SLICE_OPTIONS.gapScale,
     minSize: options.minSize ?? DEFAULT_SLICE_OPTIONS.minSize,
     tolerance: options.tolerance ?? DEFAULT_SLICE_OPTIONS.tolerance,
     noise: options.noise ?? DEFAULT_SLICE_OPTIONS.noise,

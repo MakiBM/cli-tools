@@ -46,7 +46,9 @@ npx @makibm/layt shot.png --no-crops
 | ------------------- | -------------------------------------------------------------- |
 | `-o, --out <dir>`   | Output directory (default `./.layt`)                           |
 | `-n, --name <base>` | Base filename for slices + manifest (default: image name)      |
-| `--min-gap <px>`    | Min background gutter that counts as a cut (default 16)        |
+| `--min-gap <px>`    | Cut gutter size, also the floor when scaling (default 16)      |
+| `--max-gap <px>`    | Ceiling for the scaled cut gutter (default 40)                 |
+| `--gap-scale <f>`   | Scale the gutter with region size; 0 = off (default 0)         |
 | `--min-size <px>`   | Regions smaller than this are not split further (default 24)   |
 | `--tolerance <n>`   | Per-channel background tolerance, 0-255 (default 45)           |
 | `--noise <f>`       | Gutter noise floor as a fraction of line length (default 0.03) |
@@ -59,6 +61,14 @@ npx @makibm/layt shot.png --no-crops
 `--tolerance` absorbs background noise/gradients (raise it if a textured or dark
 background is mistaken for content); `--noise` lets a sparse element crossing a
 gutter (a header label in a wide margin) still count as a cut.
+
+By default the cut gutter is a constant `--min-gap` (clean section-level slices).
+Set `--gap-scale` (e.g. `0.02`, usually with a lower `--min-gap 8`) to scale the
+gutter with region size: the whole page still needs a wide gutter, but small
+regions accept thin ones, splitting finer down to element/line level. Note this
+cannot separate two neighbors that share no clean background gutter - e.g. two
+photos butted together over a thin, uneven seam. That is the limit of whitespace
+slicing; telling those apart needs the ML models (OmniParser, DocLayout-YOLO).
 
 Running `layt` with no arguments opens the interactive TUI. Passing an image (or
 any flag) runs headless, so an agent can drive the whole thing from the CLI.

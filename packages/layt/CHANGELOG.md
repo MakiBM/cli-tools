@@ -1,5 +1,15 @@
 # @makibm/layt
 
+## 1.1.0
+
+### Minor Changes
+
+- Add an optional size-scaled cut gutter: `--gap-scale` (with `--min-gap` as the
+  floor and `--max-gap` as the ceiling) makes the gutter that triggers a cut scale
+  with each region, so the whole page still needs a wide gap while small regions
+  split finer down to element/line level. Off by default (`gapScale: 0`), so the
+  default output is unchanged.
+
 ## 1.0.1
 
 ### Patch Changes

@@ -70,7 +70,7 @@ describe("sliceLayout", () => {
         ]),
         W,
         H,
-        { minGap: 20, minSize: 24, tolerance: 12, noise: 0.03 },
+        { minGap: 20, maxGap: 40, gapScale: 0.02, minSize: 24, tolerance: 12, noise: 0.03 },
       ),
     );
     expect(result).toHaveLength(1);

@@ -10,8 +10,17 @@ export interface LayoutNode extends Box {
 }
 
 export interface SliceOptions {
-  /** Minimum run of background rows/columns (in px) that counts as a cut gutter. */
+  /**
+   * Floor for the cut-gutter size (px). The effective gutter scales with the
+   * region: `clamp(gapScale * span, minGap, maxGap)`, so a big region needs a
+   * wide gutter (less noise) while a small one accepts a thin one (splits tight
+   * neighbors like two adjacent photos).
+   */
   minGap: number;
+  /** Ceiling for the scaled cut gutter (px). */
+  maxGap: number;
+  /** Cut gutter as a fraction of the region's extent along the cut axis. */
+  gapScale: number;
   /** Regions smaller than this in both dimensions are never split further. */
   minSize: number;
   /** Per-channel tolerance for treating a pixel as the region's background. */
@@ -26,6 +35,11 @@ export interface SliceOptions {
 
 export const DEFAULT_SLICE_OPTIONS: SliceOptions = {
   minGap: 16,
+  maxGap: 40,
+  // Off by default: a constant 16px gutter gives clean section-level slices.
+  // Raise it (e.g. 0.02) to scale the gutter with region size and split finer,
+  // catching tight neighbors at the cost of more granular (line-level) regions.
+  gapScale: 0,
   minSize: 24,
   tolerance: 45,
   noise: 0.03,
@@ -215,7 +229,11 @@ const cut = (
   const colSpan = cols.slice(left, right + 1);
   const horizontal = widestGap(rowSpan) >= widestGap(colSpan);
   const profile = horizontal ? rowSpan : colSpan;
-  const segments = segmentsFromProfile(profile, opts.minGap);
+  const effGap = Math.min(
+    opts.maxGap,
+    Math.max(opts.minGap, Math.round(opts.gapScale * profile.length)),
+  );
+  const segments = segmentsFromProfile(profile, effGap);
   if (segments.length < 2) return { ...box, children: [] };
 
   const children: LayoutNode[] = [];
