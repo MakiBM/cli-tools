@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { setupSandbox, teardown, inDir, run, type SandboxContext } from "./helpers.js";
-import { workDivergedFromLive, shipCandidateShas, workMergedBaseUpstream } from "../src/ship.js";
+import {
+  workDivergedFromLive,
+  shipCandidateShas,
+  workMergedBaseUpstream,
+  editableCanvas,
+} from "../src/ship.js";
 
 async function withSandbox(fn: (ctx: SandboxContext) => Promise<void> | void): Promise<void> {
   const ctx = setupSandbox();
@@ -99,4 +104,17 @@ test("workMergedBaseUpstream: true only when base is merged into work but not ye
     run("git", ["merge", "--no-edit", "main"]);
     assert.equal(workMergedBaseUpstream("feat", "gites-feat", "main"), false);
   });
+});
+
+test("editableCanvas widens every day to working hours but keeps the session end", () => {
+  const days = [
+    { date: "2026-07-14", startMin: 14 * 60, endMin: 18 * 60 },
+    { date: "2026-07-15", startMin: 8 * 60 + 12, endMin: 18 * 60 },
+    { date: "2026-07-16", startMin: 8 * 60 + 12, endMin: 11 * 60 },
+  ];
+  assert.deepEqual(editableCanvas(days), [
+    { date: "2026-07-14", startMin: 8 * 60, endMin: 18 * 60 },
+    { date: "2026-07-15", startMin: 8 * 60, endMin: 18 * 60 },
+    { date: "2026-07-16", startMin: 8 * 60, endMin: 11 * 60 },
+  ]);
 });

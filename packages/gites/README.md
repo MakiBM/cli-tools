@@ -98,10 +98,13 @@ from `gites config` once the old branches are cleaned up.
 
 You batch many small commits on `gites-<name>` during one session; later
 you run `gites ship` and pick the commit cutoff. The session starts at the
-last commit already on `<name>` (or today `10:00` on a first ship) and runs to
-now, and commits are distributed within working hours `10:00–16:30`. If the
-span covers several days you can mark days off (weekends are pre-disabled), and
-the chunk lands on `<name>` with timestamps.
+last commit already on `<name>` (or the oldest staged commit on a first ship)
+and runs to now; both ends are editable with the arrow keys. Commits are then
+distributed within working hours `08:00-18:00`. Those hours are defaults, not
+limits: every commit time can be hand-moved anywhere between `08:00` and
+`18:00` on any session day - the only hard rule is that nothing lands in the
+future. If the span covers several days you can mark days off (weekends are
+pre-disabled), and the chunk lands on `<name>` with timestamps.
 
 ## PR chains (stacked branches)
 

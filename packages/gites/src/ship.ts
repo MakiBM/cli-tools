@@ -18,6 +18,7 @@ import {
   type DayWindow,
 } from "./time-distribution.js";
 import { editSchedule } from "./schedule-editor.js";
+import { editSessionWindow } from "./session-editor.js";
 
 const DAY_START_MIN = 8 * 60; // 08:00 - soft start for days without the first commit
 const DAY_END_MIN = 18 * 60; // 18:00 - end of a full working day
@@ -78,6 +79,19 @@ function buildCanvas(startDT: Date, endDT: Date, offDates: ReadonlySet<string>):
     if (startMin <= endMin) windows.push({ date, startMin, endMin });
   }
   return windows;
+}
+
+// Bounds for manual edits: the working-hours defaults only shape where commits are
+// placed automatically, so hand-editing may reach 08:00-18:00 on any day (and keep
+// whatever the auto canvas already allowed). The session end still caps the last
+// day, which is what keeps stamps out of the future.
+export function editableCanvas(days: readonly DayWindow[]): DayWindow[] {
+  const last = days.length - 1;
+  return days.map((d, i) => ({
+    date: d.date,
+    startMin: Math.min(d.startMin, DAY_START_MIN),
+    endMin: i === last ? d.endMin : Math.max(d.endMin, DAY_END_MIN),
+  }));
 }
 
 // Once shipped, gites rebases `work` onto `live`, so `live` is normally an
@@ -226,40 +240,34 @@ export async function ship(): Promise<void> {
   const startISO = liveHasNew
     ? gitTry("log", "-1", "--format=%cI", live)
     : gitTry("log", "-1", "--format=%aI", allShas[0]!);
-  const startDT = startISO ? new Date(startISO) : todayAt(DAY_START_MIN);
-  const endDT = new Date();
+  let startDT = startISO ? new Date(startISO) : todayAt(DAY_START_MIN);
+  let endDT = new Date();
 
   const sizes = shas.map(commitSize);
-  const candidateDates = eachDate(startDT, endDT);
 
   // --- session window screen ----------------------------------------------
   {
+    const now = { date: localDate(endDT), time: fmt(minutesOf(endDT)) };
     console.clear();
     printArt();
-    console.log(pc.bold(accent("Session window")));
-    console.log(
-      pc.dim(`Working hours up to ${fmt(DAY_END_MIN)}; commits spread by size across the window.`),
-    );
-    console.log("");
-    console.log(`  Start:   ${pc.cyan(`${localDate(startDT)} ${fmt(minutesOf(startDT))}`)}`);
-    console.log(
-      `  End:     ${pc.cyan(`${localDate(endDT)} ${fmt(minutesOf(endDT))}`)}  ${pc.dim("(now)")}`,
-    );
-    console.log(`  Commits: ${count}`);
-    console.log("");
-
-    const action = await select<"go" | "abort">({
-      message: "Use this session?",
-      choices: [
-        { name: "Continue", value: "go" },
-        { name: "Abort", value: "abort" },
-      ],
+    const result = await editSessionWindow({
+      title: "Session window",
+      subtitle: `Defaults ${fmt(DAY_START_MIN)}-${fmt(DAY_END_MIN)}; commits spread by size across the window.`,
+      window: { start: { date: localDate(startDT), time: fmt(minutesOf(startDT)) }, end: now },
+      now,
+      dayStartMin: DAY_START_MIN,
+      dayEndMin: DAY_END_MIN,
+      commits: count,
     });
-    if (action === "abort") {
+    if (result.action === "abort") {
       console.log("Aborted.");
       return;
     }
+    startDT = new Date(`${result.window.start.date}T${result.window.start.time}:00`);
+    endDT = new Date(`${result.window.end.date}T${result.window.end.time}:00`);
   }
+
+  const candidateDates = eachDate(startDT, endDT);
 
   // --- day-off screen (multi-day only) ------------------------------------
   let offDates = new Set<string>();
@@ -302,7 +310,7 @@ export async function ship(): Promise<void> {
     subtitle: `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} - ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
     rows: shas.map((sha, i) => ({ sha, subject: subjects[i]! })),
     schedule: initial,
-    days,
+    days: editableCanvas(days),
     regenerate: () => distribute(sizes, days),
     validate: validateSchedule,
   });

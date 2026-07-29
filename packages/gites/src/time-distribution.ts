@@ -23,6 +23,18 @@ export interface Stamp {
   time: string; // 'HH:MM'
 }
 
+export function addDays(date: string, delta: number): string {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return localDate(d);
+}
+
+// Absolute minute index of a stamp, for ordering comparisons across dates.
+export function absMinutes(stamp: Stamp): number {
+  const [y, m, d] = stamp.date.split("-").map((p) => parseInt(p, 10));
+  return Date.UTC(y!, m! - 1, d!) / 60000 + (parseHHMM(stamp.time) ?? 0);
+}
+
 export function localDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
