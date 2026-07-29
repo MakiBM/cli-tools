@@ -1,5 +1,11 @@
 # @makibm/gites
 
+## 1.4.0
+
+### Minor Changes
+
+- 379e2de: ship: editable session start/end (arrow keys) and uncapped manual commit times - the 08:00-18:00 working hours are defaults for automatic placement, while hand edits may reach any time in that range on any session day; nothing may land in the future.
+
 ## 1.3.0
 
 ### Minor Changes
