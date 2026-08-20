@@ -1,6 +1,14 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  lstatSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { copyLocalArtifacts } from "../src/worktree.js";
@@ -26,8 +34,26 @@ test("copyLocalArtifacts copies nested .env files and skips vendored dirs", () =
     assert.equal(readFileSync(join(to, ".env"), "utf8"), "ROOT\n");
     assert.equal(readFileSync(join(to, "apps/shell/.env.local"), "utf8"), "SHELL\n");
     assert.equal(readFileSync(join(to, "packages/api/.env.production"), "utf8"), "API\n");
-    assert.ok(existsSync(join(to, ".claude/settings.json")));
     assert.ok(!existsSync(join(to, "node_modules")), "vendored dirs are not walked");
+  } finally {
+    rmSync(from, { recursive: true, force: true });
+    rmSync(to, { recursive: true, force: true });
+  }
+});
+
+test("copyLocalArtifacts links .claude instead of copying it", () => {
+  const from = mkdtempSync(join(tmpdir(), "gites-src-"));
+  const to = mkdtempSync(join(tmpdir(), "gites-dst-"));
+  try {
+    write(from, ".claude/settings.json", "{}\n");
+
+    copyLocalArtifacts(from, to);
+
+    assert.ok(lstatSync(join(to, ".claude")).isSymbolicLink());
+    assert.equal(readFileSync(join(to, ".claude/settings.json"), "utf8"), "{}\n");
+
+    writeFileSync(join(from, ".claude/settings.json"), '{"changed":true}\n');
+    assert.equal(readFileSync(join(to, ".claude/settings.json"), "utf8"), '{"changed":true}\n');
   } finally {
     rmSync(from, { recursive: true, force: true });
     rmSync(to, { recursive: true, force: true });

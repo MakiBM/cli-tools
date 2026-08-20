@@ -1,5 +1,5 @@
-import { cpSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { cpSync, existsSync, mkdirSync, readdirSync, symlinkSync } from "node:fs";
+import { basename, dirname, join, relative } from "node:path";
 import { git, gitTry, gitRun, getConfig } from "./git.js";
 import { workBranch } from "./feature.js";
 
@@ -54,8 +54,10 @@ export function branchCheckedOutElsewhere(branch: string): boolean {
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", ".turbo", ".cache"]);
 
+const LINKED_ARTIFACTS = new Set([".claude"]);
+
 function isArtifact(name: string): boolean {
-  return name === ".claude" || name.startsWith(".env");
+  return LINKED_ARTIFACTS.has(name) || name.startsWith(".env");
 }
 
 // Collect artifact paths (relative to `from`) at any depth: top-level `.claude`
@@ -81,6 +83,12 @@ export function copyLocalArtifacts(from: string, to: string): void {
     if (!existsSync(src)) continue;
     const dst = join(to, rel);
     mkdirSync(dirname(dst), { recursive: true });
+    // .claude is its own git repo. A copy becomes an independent clone that drifts from the
+    // main checkout and re-commits the same notes, so worktrees share one directory instead.
+    if (LINKED_ARTIFACTS.has(basename(rel))) {
+      if (!existsSync(dst)) symlinkSync(relative(dirname(dst), src), dst);
+      continue;
+    }
     cpSync(src, dst, { recursive: true });
   }
 }
