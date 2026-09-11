@@ -23,6 +23,7 @@ export interface SessionEditorConfig {
   dayStartMin: number;
   dayEndMin: number;
   commits: number;
+  floor?: Stamp;
 }
 
 export type SessionEditorResult =
@@ -45,9 +46,14 @@ function fmt(min: number): string {
 // The working-hours defaults are a floor/ceiling for manual edits, not a cage: a
 // stamp that already sits outside them keeps its value and can only move back
 // toward the range. `now` is the one hard limit - no stamp may land in the future.
+// The timeline floor (newest shipped commit anywhere) is the other hard limit:
+// nothing may land before it.
 function timeBounds(stamp: Stamp, config: SessionEditorConfig): [number, number] {
   const cur = parseHHMM(stamp.time) ?? config.dayStartMin;
-  const lo = Math.min(config.dayStartMin, cur);
+  let lo = Math.min(config.dayStartMin, cur);
+  if (config.floor && stamp.date <= config.floor.date) {
+    lo = Math.max(lo, parseHHMM(config.floor.time) ?? lo);
+  }
   let hi = Math.max(config.dayEndMin, cur);
   if (stamp.date >= config.now.date) hi = Math.min(hi, parseHHMM(config.now.time) ?? hi);
   return [lo, hi];
@@ -62,6 +68,7 @@ function shiftTime(stamp: Stamp, delta: number, config: SessionEditorConfig): St
 function shiftDate(stamp: Stamp, dir: number, config: SessionEditorConfig): Stamp {
   const date = addDays(stamp.date, dir);
   if (date > config.now.date) return stamp;
+  if (config.floor && date < config.floor.date) return stamp;
   const moved = { date, time: stamp.time };
   const [lo, hi] = timeBounds(moved, config);
   const cur = parseHHMM(stamp.time) ?? lo;

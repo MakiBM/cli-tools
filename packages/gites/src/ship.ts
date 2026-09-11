@@ -19,6 +19,7 @@ import {
 } from "./time-distribution.js";
 import { editSchedule } from "./schedule-editor.js";
 import { editSessionWindow } from "./session-editor.js";
+import { timelineFloor } from "./timeline.js";
 
 const DAY_START_MIN = 8 * 60; // 08:00 - soft start for days without the first commit
 const DAY_END_MIN = 18 * 60; // 18:00 - end of a full working day
@@ -85,13 +86,17 @@ function buildCanvas(startDT: Date, endDT: Date, offDates: ReadonlySet<string>):
 // placed automatically, so hand-editing may reach 08:00-18:00 on any day (and keep
 // whatever the auto canvas already allowed). The session end still caps the last
 // day, which is what keeps stamps out of the future.
-export function editableCanvas(days: readonly DayWindow[]): DayWindow[] {
+export function editableCanvas(days: readonly DayWindow[], floor?: Date | null): DayWindow[] {
   const last = days.length - 1;
-  return days.map((d, i) => ({
-    date: d.date,
-    startMin: Math.min(d.startMin, DAY_START_MIN),
-    endMin: i === last ? d.endMin : Math.max(d.endMin, DAY_END_MIN),
-  }));
+  return days.map((d, i) => {
+    let startMin = Math.min(d.startMin, DAY_START_MIN);
+    if (floor && d.date === localDate(floor)) startMin = Math.max(startMin, minutesOf(floor));
+    return {
+      date: d.date,
+      startMin,
+      endMin: i === last ? d.endMin : Math.max(d.endMin, DAY_END_MIN),
+    };
+  });
 }
 
 // Once shipped, gites rebases `work` onto `live`, so `live` is normally an
@@ -278,6 +283,8 @@ export async function ship(): Promise<void> {
     ? gitTry("log", "-1", "--format=%cI", live)
     : gitTry("log", "-1", "--format=%aI", allShas[0]!);
   let startDT = startISO ? new Date(startISO) : todayAt(DAY_START_MIN);
+  const floor = timelineFloor();
+  if (floor && floor > startDT) startDT = floor;
   let endDT = new Date();
 
   const sizes = shas.map(commitSize);
@@ -295,6 +302,7 @@ export async function ship(): Promise<void> {
       dayStartMin: DAY_START_MIN,
       dayEndMin: DAY_END_MIN,
       commits: count,
+      floor: floor ? { date: localDate(floor), time: fmt(minutesOf(floor)) } : undefined,
     });
     if (result.action === "abort") {
       console.log("Aborted.");
@@ -347,7 +355,7 @@ export async function ship(): Promise<void> {
     subtitle: `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} - ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
     rows: shas.map((sha, i) => ({ sha, subject: subjects[i]! })),
     schedule: initial,
-    days: editableCanvas(days),
+    days: editableCanvas(days, floor),
     regenerate: () => distribute(sizes, days),
     validate: validateSchedule,
   });
