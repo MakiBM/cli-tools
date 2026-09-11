@@ -141,7 +141,7 @@ export function shipCandidateShas(live: string, work: string, baseUpstream?: str
 // Unshipped commits on a local parent feature: the child's work branch carries
 // them too, so they must reach the parent's live branch before the child ships.
 export function parentPending(base: string): number {
-  return parseInt(gitTry("rev-list", "--count", `${base}..${workBranch(base)}`) || "0", 10);
+  return shipCandidateShas(base, workBranch(base)).length;
 }
 
 export const PARENT_PENDING = (base: string, n: number): string =>
