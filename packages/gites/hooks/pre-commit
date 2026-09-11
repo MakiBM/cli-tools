@@ -1,0 +1,11 @@
+#!/bin/bash
+# gites pre-commit hook
+# Refuses commits on a gites work branch whose feature has an open PR: gites
+# locks the work branch then, and follow-up work lands on the live branch.
+branch=$(git symbolic-ref --short HEAD 2>/dev/null) || exit 0
+work_prefix=$(git config gites.workprefix 2>/dev/null || echo "gites-")
+[[ "$branch" == "$work_prefix"* ]] || exit 0
+live="${branch#"$work_prefix"}"
+[[ "$(git config "branch.$live.giteslocked" 2>/dev/null)" == "true" ]] || exit 0
+echo "BLOCKED: PR open for '$live', commit on '$live'"
+exit 1

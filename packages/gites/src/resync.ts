@@ -6,6 +6,7 @@ import { branchCheckedOutElsewhere } from "./worktree.js";
 import { originRemote, gitesRemote } from "./remotes.js";
 import { accent } from "./colors.js";
 import { withSpinner } from "./spinner.js";
+import { refreshLock, LOCK_MESSAGE } from "./lock.js";
 
 const tick = pc.green("✔");
 const arrow = pc.dim("→");
@@ -19,6 +20,8 @@ export async function resync(): Promise<void> {
   const title = live ? `Resync ${live} with ${origin}/${live}` : `Resync with ${origin}`;
   console.log(pc.bold(accent(title)));
   console.log("");
+  const locked = live ? refreshLock(live) : false;
+  if (locked) console.log(pc.yellow(`  ${LOCK_MESSAGE(live)}`));
 
   await withSpinner(
     `Fetching ${origin}`,
@@ -85,7 +88,7 @@ export async function resync(): Promise<void> {
       console.log(pc.dim(`  (${origin}/${live} not on remote yet - skipping live rebase)`));
     }
 
-    if (branchExists(work)) {
+    if (branchExists(work) && !locked) {
       await withSpinner(
         `Rebasing ${work} onto ${live}`,
         async () => {
@@ -98,7 +101,7 @@ export async function resync(): Promise<void> {
   }
 
   if (work && branchExists(work)) {
-    await gitRunAllowFail("checkout", work);
+    await gitRunAllowFail("checkout", locked ? live : work);
   }
   console.log("");
   console.log(pc.bold(pc.green("✔ Resync complete")));

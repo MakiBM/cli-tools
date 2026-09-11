@@ -17,6 +17,7 @@ import { changeBase } from "./rebase-base.js";
 import { pickBranch } from "./pick-branch.js";
 import { printArt } from "./banner.js";
 import { accent } from "./colors.js";
+import { isLocked, unlock, LOCK_MESSAGE } from "./lock.js";
 
 async function newBranchWizard(): Promise<void> {
   const name = await input({ message: "Branch name (on origin):" });
@@ -70,6 +71,7 @@ type MenuAction =
   | "ship"
   | "resync"
   | "rebase"
+  | "unlock"
   | "cleanup"
   | "settings"
   | "setup"
@@ -112,6 +114,9 @@ export async function tui(): Promise<void> {
     if (!active && features.length === 0) {
       console.log("  No features yet");
     }
+    if (active && isLocked(active)) {
+      console.log(pc.yellow(`  ${LOCK_MESSAGE(active)}`));
+    }
     if (active && base !== "main") {
       console.log(
         pc.yellow(
@@ -131,6 +136,7 @@ export async function tui(): Promise<void> {
         value: "resync",
       });
       choices.push({ name: `Change base (currently ${base})`, value: "rebase" });
+      if (isLocked(active)) choices.push({ name: "Unlock work branch", value: "unlock" });
     }
     if (showSwitch) choices.push({ name: "Switch feature", value: "switch" });
     if (canAttach()) {
@@ -169,6 +175,10 @@ export async function tui(): Promise<void> {
           break;
         case "rebase":
           await changeBase();
+          await pressAnyKey();
+          break;
+        case "unlock":
+          await unlock(active);
           await pressAnyKey();
           break;
         case "cleanup":

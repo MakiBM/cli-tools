@@ -20,6 +20,7 @@ import {
 import { editSchedule } from "./schedule-editor.js";
 import { editSessionWindow } from "./session-editor.js";
 import { timelineFloor } from "./timeline.js";
+import { refreshLock, LOCK_MESSAGE } from "./lock.js";
 
 const DAY_START_MIN = 8 * 60; // 08:00 - soft start for days without the first commit
 const DAY_END_MIN = 18 * 60; // 18:00 - end of a full working day
@@ -177,6 +178,11 @@ export async function ship(opts: ShipOptions = {}): Promise<void> {
   const work = workBranch(live);
   if (!branchExists(work)) throw new Error(`branch '${work}' not found. Start a feature first.`);
   if (!branchExists(live)) throw new Error(`branch '${live}' not found. Start a feature first.`);
+
+  if (refreshLock(live)) {
+    console.log(pc.red(LOCK_MESSAGE(live)));
+    return;
+  }
 
   const base = baseBranch(live);
   if (isLocalFeatureBase(base)) {

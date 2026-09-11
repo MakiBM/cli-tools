@@ -11,6 +11,7 @@ Commands:
   ship [--yes]          Cherry-pick commits to the live branch with custom timestamps
                         (--yes: all pending commits, floor..now, weekends off, no prompts)
   resync                Pull origin and rebase working branches
+  unlock [name]         Reopen a feature's work branch after its PR locked it
   cleanup               Prune finished features (local + backup only, never origin)
   config                Change settings (branch prefix, worktrees, backup remote)
   setup                 Re-run first-time setup
@@ -21,6 +22,13 @@ PR chains:
   When the base is squash-merged into its own parent, run change-base to
   re-parent the child (git rebase --onto) - this drops the parent's individual
   commits and avoids duplicate-commit conflicts.
+
+PR lock:
+  Once a PR exists for <name> (open or merged, checked via gh), gites-<name> is
+  locked: commits there are refused by the pre-commit hook, ship refuses, and
+  switch checks out <name>. Follow-up work (review fixes, main merges) lands on
+  <name> directly. 'gites unlock' rebases the work branch onto <name> and
+  reopens it.
 
 Worktrees:
   With --worktree, start-feature creates the feature in its own git worktree
@@ -84,6 +92,13 @@ export async function run(args: string[]): Promise<void> {
     case "ship": {
       const { ship } = await import("./ship.js");
       return ship({ yes });
+    }
+    case "unlock": {
+      const { unlock } = await import("./lock.js");
+      const { resolveLiveBranch } = await import("./feature.js");
+      const name = rest[0] ?? resolveLiveBranch().live;
+      if (!name) throw new Error("Usage: gites unlock <name>");
+      return unlock(name);
     }
     case "resync": {
       const { resync } = await import("./resync.js");
