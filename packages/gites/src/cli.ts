@@ -8,7 +8,8 @@ Commands:
   attach                Create gites-<current> from current origin feature branch
   switch                Switch between gites-managed features (prints path for worktree ones)
   change-base           Re-parent the active feature onto a new base branch (PR chains)
-  ship                  Cherry-pick commits to the live branch with custom timestamps
+  ship [--yes]          Cherry-pick commits to the live branch with custom timestamps
+                        (--yes: all pending commits, floor..now, weekends off, no prompts)
   resync                Pull origin and rebase working branches
   cleanup               Prune finished features (local + backup only, never origin)
   config                Change settings (branch prefix, worktrees, backup remote)
@@ -41,6 +42,7 @@ export async function run(args: string[]): Promise<void> {
 
   const filtered: string[] = [];
   let worktree: boolean | undefined;
+  let yes = false;
   for (const a of args) {
     if (a === "--verbose" || a === "-v") {
       process.env.GITES_VERBOSE = "1";
@@ -48,6 +50,8 @@ export async function run(args: string[]): Promise<void> {
       worktree = true;
     } else if (a === "--no-worktree") {
       worktree = false;
+    } else if (a === "--yes" || a === "-y") {
+      yes = true;
     } else {
       filtered.push(a);
     }
@@ -79,7 +83,7 @@ export async function run(args: string[]): Promise<void> {
     }
     case "ship": {
       const { ship } = await import("./ship.js");
-      return ship();
+      return ship({ yes });
     }
     case "resync": {
       const { resync } = await import("./resync.js");

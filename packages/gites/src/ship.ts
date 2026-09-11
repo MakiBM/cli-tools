@@ -164,7 +164,13 @@ async function alignWithLocalParent(live: string, work: string, base: string): P
   return withSpinner(`Rebasing ${work} onto ${live}`, () => reparentWork(live, work));
 }
 
-export async function ship(): Promise<void> {
+export interface ShipOptions {
+  // Non-interactive: every pending commit, window from the floor to now, weekends
+  // off, sizes-based distribution. Meant for agents after the user approved.
+  yes?: boolean;
+}
+
+export async function ship(opts: ShipOptions = {}): Promise<void> {
   const { live } = resolveLiveBranch();
   if (!live) throw new Error("no active feature. Start a new branch or attach first.");
 
@@ -245,25 +251,28 @@ export async function ship(): Promise<void> {
   const allSubjects = allShas.map((sha) => gitTry("log", "-1", "--format=%s", sha));
 
   // --- commit picker -------------------------------------------------------
-  console.clear();
-  printArt();
-  console.log(pc.bold(accent(`Ship commits to '${live}'`)));
-  console.log(pc.dim("Pick the latest commit to ship - everything older is included too."));
-  console.log("");
+  let upTo = allShas.length - 1;
+  if (!opts.yes) {
+    console.clear();
+    printArt();
+    console.log(pc.bold(accent(`Ship commits to '${live}'`)));
+    console.log(pc.dim("Pick the latest commit to ship - everything older is included too."));
+    console.log("");
 
-  const upTo = await select<number>({
-    message: "Ship up to (and including):",
-    pageSize: 20,
-    choices: [
-      ...allShas.map((sha, i) => ({
-        name: `${sha.slice(0, 8)}  ${allSubjects[i]}${i === allShas.length - 1 ? pc.dim("  (newest)") : ""}`,
-        value: i,
-      })),
-      new Separator(),
-      { name: pc.dim("Abort"), value: -1 },
-    ],
-    default: allShas.length - 1,
-  });
+    upTo = await select<number>({
+      message: "Ship up to (and including):",
+      pageSize: 20,
+      choices: [
+        ...allShas.map((sha, i) => ({
+          name: `${sha.slice(0, 8)}  ${allSubjects[i]}${i === allShas.length - 1 ? pc.dim("  (newest)") : ""}`,
+          value: i,
+        })),
+        new Separator(),
+        { name: pc.dim("Abort"), value: -1 },
+      ],
+      default: allShas.length - 1,
+    });
+  }
 
   if (upTo < 0) {
     console.log("Aborted.");
@@ -290,7 +299,7 @@ export async function ship(): Promise<void> {
   const sizes = shas.map(commitSize);
 
   // --- session window screen ----------------------------------------------
-  {
+  if (!opts.yes) {
     const now = { date: localDate(endDT), time: fmt(minutesOf(endDT)) };
     console.clear();
     printArt();
@@ -316,7 +325,9 @@ export async function ship(): Promise<void> {
 
   // --- day-off screen (multi-day only) ------------------------------------
   let offDates = new Set<string>();
-  if (candidateDates.length > 1) {
+  if (opts.yes) {
+    offDates = new Set(candidateDates.filter(isWeekend));
+  } else if (candidateDates.length > 1) {
     const kept = await checkbox<string>({
       message: "Ship on which days? (space toggles; weekends off by default)",
       choices: candidateDates.map((d) => ({
@@ -348,41 +359,48 @@ export async function ship(): Promise<void> {
   const initial = distribute(sizes, days);
 
   // --- time editing TUI ----------------------------------------------------
-  console.clear();
-  printArt();
-  const result = await editSchedule({
-    title: `Ship ${count} commit(s) to '${live}'`,
-    subtitle: `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} - ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
-    rows: shas.map((sha, i) => ({ sha, subject: subjects[i]! })),
-    schedule: initial,
-    days: editableCanvas(days, floor),
-    regenerate: () => distribute(sizes, days),
-    validate: validateSchedule,
-  });
+  let schedule = initial;
+  if (!opts.yes) {
+    console.clear();
+    printArt();
+    const result = await editSchedule({
+      title: `Ship ${count} commit(s) to '${live}'`,
+      subtitle: `Session: ${localDate(startDT)} ${fmt(minutesOf(startDT))} - ${localDate(endDT)} ${fmt(minutesOf(endDT))}`,
+      rows: shas.map((sha, i) => ({ sha, subject: subjects[i]! })),
+      schedule: initial,
+      days: editableCanvas(days, floor),
+      regenerate: () => distribute(sizes, days),
+      validate: validateSchedule,
+    });
 
-  if (result.action === "abort") {
-    console.log("Aborted.");
-    return;
+    if (result.action === "abort") {
+      console.log("Aborted.");
+      return;
+    }
+    schedule = result.schedule;
   }
-  const schedule = result.schedule;
 
   // --- confirm + cherry-pick ----------------------------------------------
-  console.clear();
-  printArt();
-  console.log(pc.bold(accent("Ready to ship:")));
+  if (!opts.yes) {
+    console.clear();
+    printArt();
+  }
+  console.log(pc.bold(accent(opts.yes ? `Shipping to '${live}':` : "Ready to ship:")));
   for (let i = 0; i < count; i++) {
     console.log(
       `  ${schedule[i]!.date.slice(5)} ${schedule[i]!.time}  ${shas[i]!.slice(0, 8)}  ${subjects[i]}`,
     );
   }
   console.log("");
-  const ok = await confirm({
-    message: `Cherry-pick to '${live}' and push to origin?`,
-    default: true,
-  });
-  if (!ok) {
-    console.log("Aborted.");
-    return;
+  if (!opts.yes) {
+    const ok = await confirm({
+      message: `Cherry-pick to '${live}' and push to origin?`,
+      default: true,
+    });
+    if (!ok) {
+      console.log("Aborted.");
+      return;
+    }
   }
 
   await gitRun("checkout", live);
