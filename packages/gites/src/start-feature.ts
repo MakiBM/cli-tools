@@ -1,6 +1,6 @@
 import { git, gitRun, gitRunAllowFail, branchExists } from "./git.js";
 import { originRemote, gitesRemote } from "./remotes.js";
-import { workBranch, setBaseBranch } from "./feature.js";
+import { workBranch, setBaseBranch, isLocalFeatureBase, baseRef } from "./feature.js";
 import { addWorktree, worktreeEnabled } from "./worktree.js";
 import { withSpinner } from "./spinner.js";
 
@@ -22,12 +22,19 @@ export async function startFeature(
   git("config", "gites.branch", name);
   setBaseBranch(name, base);
 
+  // Stacked on a local feature: work continues from the parent's work branch so
+  // the child sees the parent's unshipped commits too.
+  const localBase = isLocalFeatureBase(base);
+  const workStart = localBase ? workBranch(base) : name;
+
   if (worktree) {
-    await withSpinner(`Fetching ${origin}/${base}`, () => gitRunAllowFail("fetch", origin, base));
-    await withSpinner(`Creating ${name}`, () => gitRun("branch", name, `${origin}/${base}`));
+    if (!localBase) {
+      await withSpinner(`Fetching ${origin}/${base}`, () => gitRunAllowFail("fetch", origin, base));
+    }
+    await withSpinner(`Creating ${name}`, () => gitRun("branch", name, baseRef(base)));
     let path = "";
     await withSpinner(`Creating worktree for ${work}`, async () => {
-      path = await addWorktree(name, name);
+      path = await addWorktree(name, workStart);
     });
     await withSpinner(`Pushing ${work} → ${remote}`, () =>
       gitRun("-C", path, "push", "-u", remote, work),
@@ -39,11 +46,15 @@ export async function startFeature(
     return;
   }
 
-  await withSpinner(`Switching to ${base}`, () => gitRun("checkout", base));
-  await withSpinner(`Pulling ${origin}/${base}`, () => gitRunAllowFail("pull", origin, base));
-
-  await withSpinner(`Creating ${name}`, () => gitRun("checkout", "-b", name));
-  await withSpinner(`Creating ${work}`, () => gitRun("checkout", "-b", work));
+  if (localBase) {
+    await withSpinner(`Creating ${name}`, () => gitRun("branch", name, base));
+    await withSpinner(`Creating ${work}`, () => gitRun("checkout", "-b", work, workStart));
+  } else {
+    await withSpinner(`Switching to ${base}`, () => gitRun("checkout", base));
+    await withSpinner(`Pulling ${origin}/${base}`, () => gitRunAllowFail("pull", origin, base));
+    await withSpinner(`Creating ${name}`, () => gitRun("checkout", "-b", name));
+    await withSpinner(`Creating ${work}`, () => gitRun("checkout", "-b", work));
+  }
   await withSpinner(`Pushing ${work} → ${remote}`, () => gitRun("push", "-u", remote, work));
 
   console.log(`Feature started. You are on '${work}'.`);

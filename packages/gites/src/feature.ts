@@ -1,4 +1,5 @@
 import { gitTry, branchExists, currentBranch, getConfig, setConfig } from "./git.js";
+import { originRemote } from "./remotes.js";
 
 const DEFAULT_WORK_PREFIX = "gites-";
 
@@ -16,6 +17,16 @@ export function baseBranch(name: string): string {
 
 export function setBaseBranch(name: string, base: string): void {
   setConfig(`branch.${name}.gitesbase`, base);
+}
+
+// A base is "local" when it is itself a gites feature that may not be on origin
+// yet (a stacked feature). Its live branch is then the ref to build on.
+export function isLocalFeatureBase(base: string): boolean {
+  return branchExists(base) && branchExists(workBranch(base));
+}
+
+export function baseRef(base: string): string {
+  return isLocalFeatureBase(base) ? base : `${originRemote()}/${base}`;
 }
 
 export function workBranch(name: string): string {

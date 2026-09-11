@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import { gitRun, gitRunAllowFail, gitOk, branchExists } from "./git.js";
-import { resolveLiveBranch, workBranch, baseBranch } from "./feature.js";
+import { resolveLiveBranch, workBranch, baseBranch, isLocalFeatureBase } from "./feature.js";
 import { reparentWork } from "./reparent.js";
 import { branchCheckedOutElsewhere } from "./worktree.js";
 import { originRemote, gitesRemote } from "./remotes.js";
@@ -57,16 +57,16 @@ export async function resync(): Promise<void> {
 
   if (live) {
     const base = baseBranch(live);
-    const originBaseExists =
-      base !== "main" && gitOk("rev-parse", "--verify", `refs/remotes/${origin}/${base}`);
-    if (branchExists(live) && originBaseExists) {
+    const baseRef = isLocalFeatureBase(base) ? base : `${origin}/${base}`;
+    const baseExists = base !== "main" && gitOk("rev-parse", "--verify", baseRef);
+    if (branchExists(live) && baseExists) {
       await withSpinner(
-        `Rebasing ${live} onto ${origin}/${base}`,
+        `Rebasing ${live} onto ${baseRef}`,
         async () => {
           await gitRun("checkout", live);
-          await gitRun("rebase", `${origin}/${base}`);
+          await gitRun("rebase", baseRef);
         },
-        `${tick} Rebased ${live} onto ${origin}/${base} ${pc.dim("(base)")}`,
+        `${tick} Rebased ${live} onto ${baseRef} ${pc.dim("(base)")}`,
       );
     }
 

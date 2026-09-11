@@ -1,6 +1,12 @@
 import pc from "picocolors";
 import { gitRun, gitRunAllowFail, gitTry, gitOk, branchExists } from "./git.js";
-import { resolveLiveBranch, workBranch, baseBranch, setBaseBranch } from "./feature.js";
+import {
+  resolveLiveBranch,
+  workBranch,
+  baseBranch,
+  setBaseBranch,
+  isLocalFeatureBase,
+} from "./feature.js";
 import { originRemote, gitesRemote } from "./remotes.js";
 import { pickBranch } from "./pick-branch.js";
 import { accent } from "./colors.js";
@@ -30,7 +36,7 @@ export async function changeBase(): Promise<void> {
   const originRef = (b: string): string | null =>
     gitOk("rev-parse", "--verify", `refs/remotes/${origin}/${b}`) ? `${origin}/${b}` : null;
 
-  const newBaseRef = originRef(newBase) ?? newBase;
+  const newBaseRef = isLocalFeatureBase(newBase) ? newBase : (originRef(newBase) ?? newBase);
   if (!branchExists(newBase) && !originRef(newBase)) {
     throw new Error(`base '${newBase}' not found locally or on ${origin}.`);
   }
@@ -38,7 +44,7 @@ export async function changeBase(): Promise<void> {
   // Upstream to strip: prefer origin/<oldBase>; if the old parent is gone
   // (deleted after merge), fall back to the merge-base with the new base so
   // only <live>'s own commits are replayed.
-  let upstream = originRef(oldBase);
+  let upstream = isLocalFeatureBase(oldBase) ? oldBase : originRef(oldBase);
   if (!upstream) {
     const mb = gitTry("merge-base", live, newBaseRef);
     if (!mb) throw new Error(`cannot find merge-base of '${live}' and '${newBase}'.`);
