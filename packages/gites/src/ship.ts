@@ -2,7 +2,7 @@ import { select, confirm, checkbox, Separator } from "@inquirer/prompts";
 import pc from "picocolors";
 import { spawnSync, type StdioOptions } from "node:child_process";
 import { gitTry, gitRun, gitRunAllowFail, gitOk, branchExists } from "./git.js";
-import { resolveLiveBranch, baseBranch } from "./feature.js";
+import { resolveLiveBranch, baseBranch, baseRef, isLocalFeatureBase } from "./feature.js";
 import { workCutPoint, reparentWork } from "./reparent.js";
 import { originRemote, gitesRemote } from "./remotes.js";
 import { workBranch } from "./feature.js";
@@ -138,6 +138,27 @@ export function shipCandidateShas(live: string, work: string, baseUpstream?: str
     .filter(Boolean);
 }
 
+// Unshipped commits on a local parent feature: the child's work branch carries
+// them too, so they must reach the parent's live branch before the child ships.
+export function parentPending(base: string): number {
+  return parseInt(gitTry("rev-list", "--count", `${base}..${workBranch(base)}`) || "0", 10);
+}
+
+export const PARENT_PENDING = (base: string, n: number): string =>
+  `ship '${base}' first: it has ${n} unshipped commit(s).`;
+
+// A stacked child lives on two chains: live on the parent's live, work on the
+// parent's work. Bring live up to the parent's live tip, then re-anchor work on
+// live; git rebase drops the parent's commits by patch-id (they are all on live
+// once the parent is fully shipped), leaving only the child's own commits.
+async function alignWithLocalParent(live: string, work: string, base: string): Promise<boolean> {
+  const upToDate = await withSpinner(`Rebasing ${live} onto ${base}`, () =>
+    gitRunAllowFail("rebase", base, live),
+  );
+  if (!upToDate) return false;
+  return withSpinner(`Rebasing ${work} onto ${live}`, () => reparentWork(live, work));
+}
+
 export async function ship(): Promise<void> {
   const { live } = resolveLiveBranch();
   if (!live) throw new Error("no active feature. Start a new branch or attach first.");
@@ -145,6 +166,23 @@ export async function ship(): Promise<void> {
   const work = workBranch(live);
   if (!branchExists(work)) throw new Error(`branch '${work}' not found. Start a feature first.`);
   if (!branchExists(live)) throw new Error(`branch '${live}' not found. Start a feature first.`);
+
+  const base = baseBranch(live);
+  if (isLocalFeatureBase(base)) {
+    const pending = parentPending(base);
+    if (pending > 0) {
+      console.log(pc.red(PARENT_PENDING(base, pending)));
+      return;
+    }
+    if (!(await alignWithLocalParent(live, work, base))) {
+      console.log("");
+      console.log(`Conflict aligning '${live}' with its parent '${base}'. Resolve it, then:`);
+      console.log("  git rebase --continue   # after fixing conflicts");
+      console.log("  git rebase --abort      # to bail out");
+      console.log("  # then re-run 'gites ship'");
+      return;
+    }
+  }
 
   // A squash-merged parent leaves its original commits in `work`'s ancestry; they
   // are not reachable from `live` by SHA, so they leak into `live..work` and collide
@@ -176,7 +214,7 @@ export async function ship(): Promise<void> {
     return;
   }
 
-  const baseUpstream = `${originRemote()}/${baseBranch(live)}`;
+  const baseUpstream = baseRef(base);
 
   // Merging the base into the work branch is a common instinct, but ship integrates
   // the base on the client branch: the merge's conflict resolution lives only in the
@@ -235,8 +273,7 @@ export async function ship(): Promise<void> {
   // Start = last commit already on `live`; if `live` has nothing beyond its
   // base yet, start at the first commit staged in gites (the oldest one being
   // shipped). A stale last commit yields a multi-day span.
-  const base = baseBranch(live);
-  const liveHasNew = gitTry("rev-list", "--count", `${base}..${live}`) !== "0";
+  const liveHasNew = gitTry("rev-list", "--count", `${baseUpstream}..${live}`) !== "0";
   const startISO = liveHasNew
     ? gitTry("log", "-1", "--format=%cI", live)
     : gitTry("log", "-1", "--format=%aI", allShas[0]!);
