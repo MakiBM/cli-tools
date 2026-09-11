@@ -66,3 +66,20 @@ test("parentPending counts the parent's unshipped commits; shipping the child is
     assert.equal(parentPending("a"), 0);
   });
 });
+
+test("start-feature --print-path prints only the path on stdout", async () => {
+  await withSandbox(async () => {
+    const out: string[] = [];
+    const write = process.stdout.write;
+    process.stdout.write = ((chunk: string) => {
+      out.push(String(chunk));
+      return true;
+    }) as typeof process.stdout.write;
+    try {
+      await startFeature("p", "main", false, { printPath: true });
+    } finally {
+      process.stdout.write = write;
+    }
+    assert.deepEqual(out, [`${process.cwd()}\n`]);
+  });
+});

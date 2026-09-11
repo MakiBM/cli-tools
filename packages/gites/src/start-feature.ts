@@ -4,11 +4,39 @@ import { workBranch, setBaseBranch, isLocalFeatureBase, baseRef } from "./featur
 import { addWorktree, worktreeEnabled } from "./worktree.js";
 import { withSpinner } from "./spinner.js";
 
+export interface StartOptions {
+  // Print only the feature's path on stdout (everything else goes to stderr) so
+  // a shell wrapper can `cd "$(gites start-feature ... --print-path)"`.
+  printPath?: boolean;
+}
+
 export async function startFeature(
   name: string | undefined,
   base: string = "main",
   worktree: boolean = worktreeEnabled(),
+  opts: StartOptions = {},
 ): Promise<void> {
+  if (!opts.printPath) {
+    await createFeature(name, base, worktree);
+    return;
+  }
+  // Spinners and progress lines go through console.log; keep stdout clean for
+  // the path by routing them to stderr for the duration.
+  const log = console.log;
+  console.log = console.error;
+  try {
+    const path = await createFeature(name, base, worktree);
+    process.stdout.write(`${path}\n`);
+  } finally {
+    console.log = log;
+  }
+}
+
+async function createFeature(
+  name: string | undefined,
+  base: string,
+  worktree: boolean,
+): Promise<string> {
   if (!name) throw new Error("Usage: gites start-feature <name> [base]");
 
   const work = workBranch(name);
@@ -43,7 +71,7 @@ export async function startFeature(
     console.log(`Feature started in its own worktree:`);
     console.log(`  ${path}`);
     console.log(`'${name}' stays local until you ship - nothing pushed to ${origin} yet.`);
-    return;
+    return path;
   }
 
   if (localBase) {
@@ -59,4 +87,5 @@ export async function startFeature(
 
   console.log(`Feature started. You are on '${work}'.`);
   console.log(`'${name}' stays local until you ship - nothing pushed to ${origin} yet.`);
+  return process.cwd();
 }

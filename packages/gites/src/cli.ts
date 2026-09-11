@@ -15,6 +15,7 @@ Commands:
   cleanup               Prune finished features (local + backup only, never origin)
   config                Change settings (branch prefix, worktrees, backup remote)
   setup                 Re-run first-time setup
+  skill-install         Write the gites rules as a Claude skill (~/.claude/skills/gites)
   help                  Show this help
 
 PR chains:
@@ -39,6 +40,8 @@ Flags:
   -v, --verbose         Show underlying git output
       --worktree        Create the feature in its own worktree (start-feature)
       --no-worktree     Force in-place checkout even if worktrees are the default
+      --print-path      start-feature: print only the feature path on stdout
+                        (shell: gs() { cd "$(gites start-feature "$@" --print-path)"; })
 `;
 
 interface CliError extends Error {
@@ -51,6 +54,7 @@ export async function run(args: string[]): Promise<void> {
   const filtered: string[] = [];
   let worktree: boolean | undefined;
   let yes = false;
+  let printPath = false;
   for (const a of args) {
     if (a === "--verbose" || a === "-v") {
       process.env.GITES_VERBOSE = "1";
@@ -60,6 +64,8 @@ export async function run(args: string[]): Promise<void> {
       worktree = false;
     } else if (a === "--yes" || a === "-y") {
       yes = true;
+    } else if (a === "--print-path") {
+      printPath = true;
     } else {
       filtered.push(a);
     }
@@ -75,7 +81,7 @@ export async function run(args: string[]): Promise<void> {
     case "start-feature": {
       const { startFeature } = await import("./start-feature.js");
       const { worktreeEnabled } = await import("./worktree.js");
-      return startFeature(rest[0], rest[1], worktree ?? worktreeEnabled());
+      return startFeature(rest[0], rest[1], worktree ?? worktreeEnabled(), { printPath });
     }
     case "attach": {
       const { attach } = await import("./attach.js");
@@ -115,6 +121,11 @@ export async function run(args: string[]): Promise<void> {
     case "setup": {
       const { setupWizard } = await import("./setup.js");
       return setupWizard();
+    }
+    case "skill-install": {
+      const { installSkill } = await import("./skill.js");
+      console.log(`Wrote ${installSkill()}`);
+      return;
     }
     case "help":
     case "-h":

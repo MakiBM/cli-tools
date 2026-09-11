@@ -37,7 +37,8 @@ test("ship --yes ships every pending commit with ascending past timestamps and p
     );
     const stamps = shipped.map((l) => new Date(l.split("|")[1]!).getTime()).reverse();
     assert.ok(stamps[0]! < stamps[1]!, "timestamps ascend");
-    assert.ok(stamps[1]! <= Date.now(), "nothing in the future");
+    // Stamps carry random natural seconds inside the current minute.
+    assert.ok(stamps[1]! <= Date.now() + 60_000, "nothing beyond the current minute");
     assert.ok(remoteHasBranch(TEST_ORIGIN, "a"));
     assert.equal(run("git", ["symbolic-ref", "--short", "HEAD"]).trim(), "gites-a");
   });

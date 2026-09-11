@@ -36,14 +36,49 @@ gites attach                   # Adopt the current origin branch as a gites feat
 gites switch                   # Switch between features (prints the path for worktree ones)
 gites change-base              # Re-parent the active feature onto a new base (PR chains)
 gites ship                     # Cherry-pick commits with custom timestamps
+gites ship --yes               # Same, non-interactive (all pending, floor..now, weekends off)
+gites unlock <name>            # Reopen a work branch locked by its PR
 gites resync                   # Pull origin and rebase working branches
 gites cleanup                  # Prune finished features (local + backup only)
 gites config                   # Change settings (prefix, worktrees, backup remote)
 gites setup                    # Re-run first-time setup
+gites skill-install            # Write the rules as a Claude skill (~/.claude/skills/gites)
 gites help                     # Show help
 ```
 
 Flags: `-v` / `--verbose` to surface raw git output.
+
+## Shell helper
+
+`start-feature` cannot move your shell; `--print-path` prints only the feature
+path so a function can:
+
+```bash
+gs() { cd "$(gites start-feature "$@" --worktree --print-path)"; }
+```
+
+## Local stacks
+
+A feature may be based on another local, unshipped feature:
+`gites start-feature B A`. `B`'s work branch starts from `gites-A` (so it sees
+A's unshipped commits) and `B`'s live branch from local `A`. Nothing is pushed.
+Shipping `B` requires `A` to be fully shipped first (`ship 'A' first`); ship then
+rebases `B` onto `A`'s live tip and ships only `B`'s own commits. Chains of any
+depth work, ship top-down.
+
+## Timeline floor
+
+Every ship starts after the newest shipped commit on any feature (local live
+branches and their origin refs). History reads as one person working serially.
+The session editor clamps to the floor.
+
+## PR lock
+
+Once `<name>` has an open or merged PR (`gh pr view`), `gites-<name>` is locked:
+the pre-commit hook refuses commits, `ship` refuses, `switch` checks out
+`<name>`. Review fixes and main merges land on `<name>` directly.
+`gites unlock <name>` rebases work onto live and reopens it. QA fix branches
+(`<ticket>-qa-fixes`) stay outside gites.
 
 ## Worktrees
 
