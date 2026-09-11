@@ -49,8 +49,13 @@ Filter one package: `pnpm --filter @makibm/twixer <script>`.
   via `figlet.parseFont`. Do NOT switch to figlet's own font loading - its ESM build
   reads the font path against CWD and crashes at runtime. Don't reformat that vendored
   file (it's in `.oxfmtrc.json` ignore, along with test fixtures).
-- **gites tests are git-heavy** (spawn sandboxes, `chdir`): 30s timeout in
-  `packages/gites/vitest.config.ts`, and Vitest isolates files so cwd is per-file.
+- **gites tests are git-heavy** (spawn sandboxes, `chdir`): 30s timeout and
+  `maxWorkers: 3` in `packages/gites/vitest.config.ts` (more workers and git
+  latency under load trips the timeout), and Vitest isolates files so cwd is
+  per-file. `inDir` never returns to the real checkout after a sandbox: a timed
+  out test keeps running and its git calls must not hit this repo. A run with
+  timeouts can still leave stray sandboxes; check `git branch` and
+  `git config --local -l` for `gites.*`/`test-*` leftovers.
   In `workflow.test.ts`, fresh-module dynamic imports use a dotless nonce query -
   a dot in the query makes Vite misread it as a file extension.
 - **twixer** is a deep-module refactor: pure `matching.ts`, per-scan `createTheme()`,

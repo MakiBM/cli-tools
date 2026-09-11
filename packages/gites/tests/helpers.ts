@@ -54,13 +54,18 @@ export function teardown(sandbox: string): void {
   rmSync(sandbox, { recursive: true, force: true });
 }
 
+// Leave the process in an empty temp dir, never back in the real checkout: a
+// test that timed out keeps running after its sandbox is torn down, and any git
+// command it still issues must fail on "not a repository" rather than land in
+// this repo (it once created branches and commits here).
+const NEUTRAL_DIR = mkdtempSync(join(tmpdir(), "gites-neutral-"));
+
 export async function inDir<T>(dir: string, fn: () => Promise<T> | T): Promise<T> {
-  const prev = process.cwd();
   process.chdir(dir);
   try {
     return await fn();
   } finally {
-    process.chdir(prev);
+    process.chdir(NEUTRAL_DIR);
   }
 }
 
