@@ -1,7 +1,10 @@
 # Agent workflow: gites stacks, ws workspaces, bell, guard, manager
 
 Date: 2026-09-11
-Status: approved in brainstorm, not implemented
+Status: section 1 (gites) implemented in this repo. Sections 2 and 3 were
+rebuilt on native macOS desktops (no AeroSpace) and live in
+`~/Documents/projects/.workspace`, outside this repo. Sections 4 and 5 live in
+`~/.claude` and the npo-cms-frontend `.claude` repo.
 
 ## Goal
 
