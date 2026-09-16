@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import pc from "picocolors";
-import { git, getConfig, setConfig, branchExists } from "./git.js";
+import { getConfig, setConfig, branchExists } from "./git.js";
 import { workBranch } from "./feature.js";
 import { reparentWork } from "./reparent.js";
 import { ensurePreCommitHook } from "./hook-install.js";
@@ -48,6 +48,6 @@ export async function unlock(name: string): Promise<void> {
     );
     return;
   }
-  git("config", "--unset", lockKey(name));
+  setConfig(lockKey(name), "false");
   console.log(pc.green(`Unlocked '${name}'. Work continues on '${work}'.`));
 }

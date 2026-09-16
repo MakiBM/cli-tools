@@ -6,6 +6,17 @@ branch=$(git symbolic-ref --short HEAD 2>/dev/null) || exit 0
 work_prefix=$(git config gites.workprefix 2>/dev/null || echo "gites-")
 [[ "$branch" == "$work_prefix"* ]] || exit 0
 live="${branch#"$work_prefix"}"
-[[ "$(git config "branch.$live.giteslocked" 2>/dev/null)" == "true" ]] || exit 0
+lock_key="branch.$live.giteslocked"
+locked=$(git config "$lock_key" 2>/dev/null)
+# gites commands cache the lock only when they run, so a PR opened since then is
+# still unknown here. An explicit unlock stores "false" and is respected.
+if [[ -z "$locked" ]]; then
+  state=$(gh pr view "$live" --json state -q .state 2>/dev/null)
+  if [[ "$state" == "OPEN" || "$state" == "MERGED" ]]; then
+    git config "$lock_key" true
+    locked=true
+  fi
+fi
+[[ "$locked" == "true" ]] || exit 0
 echo "BLOCKED: PR open for '$live', commit on '$live'"
 exit 1
