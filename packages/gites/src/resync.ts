@@ -61,7 +61,9 @@ export async function resync(): Promise<void> {
   if (live) {
     const base = baseBranch(live);
     const baseRef = isLocalFeatureBase(base) ? base : `${origin}/${base}`;
-    const baseExists = base !== "main" && gitOk("rev-parse", "--verify", baseRef);
+    const originLiveExists = gitOk("rev-parse", "--verify", `refs/remotes/${origin}/${live}`);
+    const followsBase = base !== "main" || !originLiveExists;
+    const baseExists = followsBase && gitOk("rev-parse", "--verify", baseRef);
     if (branchExists(live) && baseExists) {
       await withSpinner(
         `Rebasing ${live} onto ${baseRef}`,
@@ -72,8 +74,6 @@ export async function resync(): Promise<void> {
         `${tick} Rebased ${live} onto ${baseRef} ${pc.dim("(base)")}`,
       );
     }
-
-    const originLiveExists = gitOk("rev-parse", "--verify", `refs/remotes/${origin}/${live}`);
 
     if (branchExists(live) && originLiveExists) {
       await withSpinner(

@@ -162,6 +162,48 @@ test("resync fast-forwards main and rebases working branches", async () => {
   });
 });
 
+test("resync moves an unshipped live branch and its work onto the new main", async () => {
+  await withSandbox(async ({ remote, origin, sandbox }) => {
+    run("git", ["remote", "remove", TEST_REMOTE]);
+    const { runSetup } = await importFresh<typeof import("../src/setup.js")>("setup.ts");
+    runSetup(remote, setupOpts());
+    const { startFeature } =
+      await importFresh<typeof import("../src/start-feature.js")>("start-feature.ts");
+    await startFeature("feat-u");
+    makeCommit("local work");
+
+    teammatePush(origin, sandbox);
+
+    const { resync } = await importFresh<typeof import("../src/resync.js")>("resync.ts");
+    await resync();
+
+    const originMain = run("git", ["rev-parse", `${TEST_ORIGIN}/main`]).trim();
+    assert.equal(run("git", ["rev-parse", "feat-u"]).trim(), originMain);
+    assert.equal(run("git", ["rev-parse", "gites-feat-u~1"]).trim(), originMain);
+    assert.equal(run("git", ["log", "-1", "--format=%s", "gites-feat-u"]).trim(), "local work");
+  });
+});
+
+test("resync leaves a shipped live branch off the new main", async () => {
+  await withSandbox(async ({ remote, origin, sandbox }) => {
+    run("git", ["remote", "remove", TEST_REMOTE]);
+    const { runSetup } = await importFresh<typeof import("../src/setup.js")>("setup.ts");
+    runSetup(remote, setupOpts());
+    const { startFeature } =
+      await importFresh<typeof import("../src/start-feature.js")>("start-feature.ts");
+    await startFeature("feat-s");
+    run("git", ["push", TEST_ORIGIN, "feat-s"]);
+    const shippedTip = run("git", ["rev-parse", "feat-s"]).trim();
+
+    teammatePush(origin, sandbox);
+
+    const { resync } = await importFresh<typeof import("../src/resync.js")>("resync.ts");
+    await resync();
+
+    assert.equal(run("git", ["rev-parse", "feat-s"]).trim(), shippedTip);
+  });
+});
+
 test("feature discovery lists pairs and active", async () => {
   await withSandbox(async ({ remote }) => {
     run("git", ["remote", "remove", TEST_REMOTE]);
