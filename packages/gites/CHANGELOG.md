@@ -1,5 +1,17 @@
 # @makibm/gites
 
+## 1.5.0
+
+### Minor Changes
+
+- 3bfcf7f: Local stacked features (unshipped parent as base, parent-first ship), global timeline floor, `ship --yes`, PR lock with pre-commit hook and `unlock`, `skill-install`, `start-feature --print-path`.
+
+### Patch Changes
+
+- 96339ac: Link `.claude` into a new worktree instead of copying it. `.claude` is its own git repo, so
+  every copy became an independent clone that drifted from the main checkout and re-committed the
+  same notes under new hashes, which turned each pull into a merge conflict.
+
 ## 1.4.0
 
 ### Minor Changes
