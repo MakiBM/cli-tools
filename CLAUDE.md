@@ -2,6 +2,8 @@
 
 pnpm-workspaces monorepo of MakiBM CLI tools. Read this before editing.
 
+Knowledge lives in .claude/rules and .claude/skills; write it as you learn it, by the global rule "knowledge".
+
 ## Layout
 
 - `packages/cli-kit` - `@makibm/cli-kit`, the shared CLI shell (published). Logo,
